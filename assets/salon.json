@@ -1,0 +1,51 @@
+{
+  "name": "Vietnam Nails",
+  "whatsapp": "4915227859766",
+  "phone": "0345 686 739 49",
+  "address": "Rannische Str. 6, 06108 Halle (Saale)",
+  "hours": {
+    "0": null,
+    "1": ["08:30", "18:30"],
+    "2": ["08:30", "18:30"],
+    "3": ["08:30", "18:30"],
+    "4": ["08:30", "18:30"],
+    "5": ["08:30", "18:30"],
+    "6": ["09:00", "16:00"]
+  },
+  "closedDates": [],
+  "slotStep": 30,
+  "leadMinutes": 90,
+  "daysAhead": 60,
+  "capacity": 2,
+  "categories": [
+    { "id": "hands", "label": "Hände", "items": [
+      { "id": "neu", "name": "Neumodellage", "meta": "Gel / Acryl, Form & Länge nach Wunsch", "price": 33, "dur": 90 },
+      { "id": "auffuellen", "name": "Auffüllen", "meta": "Für bestehende Modellage", "price": 30, "dur": 75 }
+    ]},
+    { "id": "feet", "label": "Füße", "items": [
+      { "id": "pedi-s", "name": "Standard-Pediküre", "meta": "ca. 30 Min.", "price": 25, "dur": 30 },
+      { "id": "pedi-s-shellac", "name": "Standard-Pediküre + Shellac", "meta": "inkl. Farblackierung", "price": 42, "dur": 60 },
+      { "id": "pedi-s-pulver", "name": "Standard-Pediküre + Pulvermodellage", "meta": "inkl. French Design", "price": 50, "dur": 75 },
+      { "id": "pedi-d", "name": "Deluxe-Pediküre", "meta": "ca. 41 Min. · mit Fußmaske & Massage", "price": 36, "dur": 45 },
+      { "id": "pedi-d-shellac", "name": "Deluxe-Pediküre + Shellac", "meta": "inkl. Farblackierung", "price": 52, "dur": 75 },
+      { "id": "pedi-d-pulver", "name": "Deluxe-Pediküre + Pulvermodellage", "meta": "inkl. French Design", "price": 60, "dur": 90 },
+      { "id": "fuss-shellac", "name": "Shellac Fußnägel", "meta": "ohne Pediküre", "price": 29, "dur": 45 },
+      { "id": "fuss-pulver", "name": "Pulvermodellage Fußnägel", "meta": "ohne Pediküre", "price": 35, "dur": 60 }
+    ]},
+    { "id": "lash", "label": "Wimpern", "items": [
+      { "id": "lash-neu", "name": "Wimpernverlängerung – Neuanlage", "meta": "Preis nach Beratung", "price": null, "dur": 120 },
+      { "id": "lash-fill", "name": "Wimpernverlängerung – Auffüllen", "meta": "Preis nach Beratung", "price": null, "dur": 60 }
+    ]}
+  ],
+  "extras": [
+    { "id": "french", "name": "French oder Farbe", "label": "+5 €", "min": 5 },
+    { "id": "laenge", "name": "Überlänge", "label": "+3–10 €", "min": 3, "from": true },
+    { "id": "3d", "name": "3D-Blumendesign", "label": "+4 €", "min": 4 },
+    { "id": "cateye", "name": "Cat-Eye-Effekt", "label": "+8–10 €", "min": 8, "from": true },
+    { "id": "chrome", "name": "Chrome-Effekt", "label": "+5–10 €", "min": 5, "from": true },
+    { "id": "design-set", "name": "Design – ganzes Set", "label": "ab 10 €", "min": 10, "from": true },
+    { "id": "design-nagel", "name": "Design – einzelne Nägel", "label": "ab 2 €", "min": 2, "from": true },
+    { "id": "farben", "name": "Zwei zusätzliche Farben", "label": "+3 €", "min": 3 },
+    { "id": "steine", "name": "Schmucksteine (2 Stk.)", "label": "+3 €", "min": 3 }
+  ]
+}

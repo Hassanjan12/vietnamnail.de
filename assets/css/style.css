@@ -478,6 +478,7 @@ h2 em, h1 em { font-weight: 400; }
 .bk-radio span { display: inline-flex; align-items: center; min-height: 46px; padding: 0 22px; border: 1px solid var(--line); font-size: .95rem; transition: all .25s; }
 .bk-radio input:checked + span { background: var(--black); color: var(--white); border-color: var(--black); }
 .bk-radio input:focus-visible + span { outline: 1px solid var(--black); outline-offset: 3px; }
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 .bk-consent { display: flex; gap: 14px; align-items: flex-start; font-size: .88rem; color: var(--mute); cursor: pointer; line-height: 1.55; }
 .bk-consent input { appearance: none; -webkit-appearance: none; flex: none; width: 20px; height: 20px; border: 1px solid var(--black); margin: 1px 0 0; position: relative; cursor: pointer; }
 .bk-consent input:checked { background: var(--black); }

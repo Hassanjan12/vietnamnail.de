@@ -366,7 +366,7 @@
       <section class="bk-step" data-bk-step="2" hidden>
         <p class="label">Schritt 2 von 4</p>
         <h2 class="bk-h">Wann passt es <em>Ihnen?</em></h2>
-        <p class="bk-lead">Wählen Sie Ihren Wunschtermin. Wir bestätigen ihn kurzfristig.</p>
+        <p class="bk-lead">Angezeigt werden nur freie Zeiten. Wir bestätigen Ihren Termin kurzfristig.</p>
         <div class="cal">
           <div class="cal-head">
             <button class="cal-nav" data-cal-prev aria-label="Vorheriger Monat"></button>
@@ -402,6 +402,7 @@
             <label><input type="radio" name="visit" value="Neukundin/Neukunde" checked><span>Erster Besuch</span></label>
             <label><input type="radio" name="visit" value="Stammkundin/Stammkunde"><span>Ich war schon da</span></label>
           </fieldset>
+          <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
           <label class="bk-consent">
             <input type="checkbox" name="consent" required>
             <span>Ich bin einverstanden, dass meine Angaben zur Bearbeitung der Terminanfrage verwendet werden (<a href="datenschutz.html" target="_blank">Datenschutz</a>).</span>
@@ -413,16 +414,16 @@
       <section class="bk-step" data-bk-step="4" hidden>
         <p class="label">Schritt 4 von 4</p>
         <h2 class="bk-h">Alles <em>richtig?</em></h2>
-        <p class="bk-lead">Prüfen Sie Ihre Anfrage. Mit dem Absenden öffnet sich WhatsApp mit Ihrer fertigen Nachricht.</p>
+        <p class="bk-lead">Prüfen Sie Ihre Anfrage. Nach dem Absenden melden wir uns mit der Bestätigung.</p>
         <div class="review" data-review></div>
       </section>
 
       <!-- DONE -->
       <section class="bk-step bk-done" data-bk-step="5" hidden>
         <div class="done-mark" aria-hidden="true"></div>
-        <p class="label">Anfrage vorbereitet</p>
+        <p class="label" data-done-label>Anfrage vorbereitet</p>
         <h2 class="bk-h">Danke, <em data-done-name></em></h2>
-        <p class="bk-lead">Bitte senden Sie die Nachricht in WhatsApp ab. Sobald wir Ihren Termin bestätigt haben, melden wir uns bei Ihnen.</p>
+        <p class="bk-lead" data-done-text></p>
         <div class="done-card" data-done-card></div>
         <div class="done-actions">
           <button class="btn-solid" data-done-wa>WhatsApp erneut öffnen</button>
