@@ -183,12 +183,16 @@ function vn_free_slots(string $date, int $dur): array {
   $last = (new DateTime($today))->modify('+' . (int) $s['daysAhead'] . ' days')->format('Y-m-d');
   if ($date > $last) return [];
   [$o, $c] = [vn_min($h[0]), vn_min($h[1])];
+  $lastStart = isset($h[2]) ? vn_min($h[2]) : $c;
   $earliest = $date === $today ? ((int) date('G')) * 60 + (int) date('i') + (int) $s['leadMinutes'] : -1;
   $busy = vn_busy($date);
   $cap = max(1, (int) ($s['capacity'] ?? 1));
   $out = [];
-  for ($m = $o; $m + $dur <= $c; $m += (int) $s['slotStep']) {
-    if ($m < $earliest) continue;
+  $starts = [];
+  for ($m = $o; $m <= $lastStart; $m += (int) $s['slotStep']) $starts[] = $m;
+  if (isset($h[2]) && !in_array($lastStart, $starts, true)) $starts[] = $lastStart; // z. B. 18:15
+  foreach ($starts as $m) {
+    if ($m < $earliest || $m + $dur > $c) continue;
     if (vn_fits($busy, $m, $dur, $cap)) $out[] = vn_hm($m);
   }
   return $out;

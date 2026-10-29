@@ -126,6 +126,9 @@
       }
       statusEl.innerHTML = `<i class="dot${open ? " is-open" : ""}"></i>${txt}`;
     }
+    const lastEl = $("[data-last-start]");
+    const wk = CONFIG.hours[1];
+    if (lastEl && wk && wk[2]) lastEl.textContent = `Letzter Termin Mo – Fr um ${nice(wk[2])} Uhr`;
   }
 
   const yearEl = $("[data-year]");
@@ -317,12 +320,14 @@
     };
     const localSlots = d => {
       if (isClosed(d)) return [];
-      const [o, c] = CONFIG.hours[d.getDay()].map(toMin);
+      const [o, c, last] = CONFIG.hours[d.getDay()].map(toMin);
+      const lastStart = last ?? c;
       const dur = Math.max(duration(), 30);
       const earliest = d.getTime() === today.getTime() ? now.getHours() * 60 + now.getMinutes() + CONFIG.leadMinutes : -1;
-      const out = [];
-      for (let m = o; m + dur <= c; m += CONFIG.slotStep) if (m >= earliest) out.push(toHM(m));
-      return out;
+      const starts = [];
+      for (let m = o; m <= lastStart; m += CONFIG.slotStep) starts.push(m);
+      if (last !== undefined && !starts.includes(last)) starts.push(last);
+      return starts.filter(m => m >= earliest && m + dur <= c).map(toHM);
     };
     const renderCal = () => {
       ensureAvail(S.month);
