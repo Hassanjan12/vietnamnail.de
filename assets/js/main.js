@@ -126,6 +126,11 @@
       }
       statusEl.innerHTML = `<i class="dot${open ? " is-open" : ""}"></i>${txt}`;
     }
+    const ftHours = $("[data-ft-hours]");
+    if (ftHours) {
+      const sat = CONFIG.hours[6], wk = CONFIG.hours[1];
+      ftHours.innerHTML = `Mo – Fr ${wk ? `${nice(wk[0])} – ${nice(wk[1])}` : "geschlossen"}<br>Sa ${sat ? `${nice(sat[0])} – ${nice(sat[1])}` : "geschlossen"}<br>So geschlossen`;
+    }
     const lastEl = $("[data-last-start]");
     const wk = CONFIG.hours[1];
     if (lastEl && wk && wk[2]) lastEl.textContent = `Letzter Termin Mo – Fr um ${nice(wk[2])} Uhr`;
@@ -165,9 +170,23 @@
     </button>`).join("");
   $$(".g", gal).forEach(el => el.classList.add("is-in"));
 
+  // Zuerst nur eine Auswahl zeigen, Rest per Knopf
+  const GAL_FIRST = 9;
+  const moreWrap = $("[data-gal-more-wrap]");
+  let galOpen = false;
+  const collapse = () => {
+    const all = !$("[data-filter].is-active") || $("[data-filter].is-active").dataset.filter === "all";
+    $$(".g", gal).forEach((g, i) => g.classList.toggle("is-collapsed", all && !galOpen && i >= GAL_FIRST));
+    moreWrap.hidden = !all || galOpen || GALLERY.length <= GAL_FIRST;
+    $("[data-gal-more]").textContent = `Alle ${GALLERY.length} Arbeiten ansehen`;
+  };
+  collapse();
+  $("[data-gal-more]").addEventListener("click", () => { galOpen = true; collapse(); });
+
   $$("[data-filter]").forEach(b => b.addEventListener("click", () => {
     $$("[data-filter]").forEach(x => x.classList.toggle("is-active", x === b));
     $$(".g", gal).forEach(g => g.classList.toggle("is-hidden", b.dataset.filter !== "all" && g.dataset.cat !== b.dataset.filter));
+    collapse();
   }));
 
   const lb = $("[data-lb]"), lbImg = $("[data-lb-img]"), lbCap = $("[data-lb-cap]"), lbCount = $("[data-lb-count]");

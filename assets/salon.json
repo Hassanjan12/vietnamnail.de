@@ -34,8 +34,8 @@
       { "id": "fuss-pulver", "name": "Pulvermodellage Fußnägel", "meta": "ohne Pediküre", "price": 35, "dur": 30 }
     ]},
     { "id": "lash", "label": "Wimpern", "items": [
-      { "id": "lash-neu", "name": "Wimpernverlängerung – Neuanlage", "meta": "Preis nach Beratung", "price": null, "dur": 30 },
-      { "id": "lash-fill", "name": "Wimpernverlängerung – Auffüllen", "meta": "Preis nach Beratung", "price": null, "dur": 30 }
+      { "id": "lash-neu", "name": "Wimpern – Neuanlage", "meta": "Wimpernverlängerung · Preis nach Beratung", "price": null, "dur": 30 },
+      { "id": "lash-fill", "name": "Wimpern – Auffüllen", "meta": "Wimpernverlängerung · Preis nach Beratung", "price": null, "dur": 30 }
     ]}
   ],
   "extras": [
