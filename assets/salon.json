@@ -16,25 +16,25 @@
   "slotStep": 30,
   "leadMinutes": 90,
   "daysAhead": 60,
-  "capacity": 2,
+  "capacity": 4,
   "categories": [
     { "id": "hands", "label": "Hände", "items": [
-      { "id": "neu", "name": "Neumodellage", "meta": "Gel / Acryl, Form & Länge nach Wunsch", "price": 33, "dur": 90 },
-      { "id": "auffuellen", "name": "Auffüllen", "meta": "Für bestehende Modellage", "price": 30, "dur": 75 }
+      { "id": "neu", "name": "Neumodellage", "meta": "Gel / Acryl, Form & Länge nach Wunsch", "price": 33, "dur": 30 },
+      { "id": "auffuellen", "name": "Auffüllen", "meta": "Für bestehende Modellage", "price": 30, "dur": 30 }
     ]},
     { "id": "feet", "label": "Füße", "items": [
       { "id": "pedi-s", "name": "Standard-Pediküre", "meta": "ca. 30 Min.", "price": 25, "dur": 30 },
-      { "id": "pedi-s-shellac", "name": "Standard-Pediküre + Shellac", "meta": "inkl. Farblackierung", "price": 42, "dur": 60 },
-      { "id": "pedi-s-pulver", "name": "Standard-Pediküre + Pulvermodellage", "meta": "inkl. French Design", "price": 50, "dur": 75 },
+      { "id": "pedi-s-shellac", "name": "Standard-Pediküre + Shellac", "meta": "inkl. Farblackierung", "price": 42, "dur": 30 },
+      { "id": "pedi-s-pulver", "name": "Standard-Pediküre + Pulvermodellage", "meta": "inkl. French Design", "price": 50, "dur": 30 },
       { "id": "pedi-d", "name": "Deluxe-Pediküre", "meta": "ca. 41 Min. · mit Fußmaske & Massage", "price": 36, "dur": 45 },
-      { "id": "pedi-d-shellac", "name": "Deluxe-Pediküre + Shellac", "meta": "inkl. Farblackierung", "price": 52, "dur": 75 },
-      { "id": "pedi-d-pulver", "name": "Deluxe-Pediküre + Pulvermodellage", "meta": "inkl. French Design", "price": 60, "dur": 90 },
-      { "id": "fuss-shellac", "name": "Shellac Fußnägel", "meta": "ohne Pediküre", "price": 29, "dur": 45 },
-      { "id": "fuss-pulver", "name": "Pulvermodellage Fußnägel", "meta": "ohne Pediküre", "price": 35, "dur": 60 }
+      { "id": "pedi-d-shellac", "name": "Deluxe-Pediküre + Shellac", "meta": "inkl. Farblackierung", "price": 52, "dur": 45 },
+      { "id": "pedi-d-pulver", "name": "Deluxe-Pediküre + Pulvermodellage", "meta": "inkl. French Design", "price": 60, "dur": 45 },
+      { "id": "fuss-shellac", "name": "Shellac Fußnägel", "meta": "ohne Pediküre", "price": 29, "dur": 30 },
+      { "id": "fuss-pulver", "name": "Pulvermodellage Fußnägel", "meta": "ohne Pediküre", "price": 35, "dur": 30 }
     ]},
     { "id": "lash", "label": "Wimpern", "items": [
-      { "id": "lash-neu", "name": "Wimpernverlängerung – Neuanlage", "meta": "Preis nach Beratung", "price": null, "dur": 120 },
-      { "id": "lash-fill", "name": "Wimpernverlängerung – Auffüllen", "meta": "Preis nach Beratung", "price": null, "dur": 60 }
+      { "id": "lash-neu", "name": "Wimpernverlängerung – Neuanlage", "meta": "Preis nach Beratung", "price": null, "dur": 30 },
+      { "id": "lash-fill", "name": "Wimpernverlängerung – Auffüllen", "meta": "Preis nach Beratung", "price": null, "dur": 30 }
     ]}
   ],
   "extras": [
