@@ -2,21 +2,22 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Vietnam Nails Halle – Nageldesign, Pediküre &amp; Wimpern</title>
-  <meta name="description" content="Nagelstudio in der Innenstadt von Halle (Saale), Rannische Str. 6. Neumodellage, Auffüllen, Nageldesign, Pediküre und Wimpern. Termin online anfragen.">
-  <meta name="theme-color" content="#f6f3ee">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Vietnam Nails · Nagelstudio Halle (Saale)</title>
+  <meta name="description" content="Nageldesign, Pediküre und Wimpern in der Innenstadt von Halle (Saale). Rannische Str. 6. Termin bequem online anfragen.">
+  <meta name="theme-color" content="#0a0a0a">
   <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
 
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Vietnam Nails Halle">
+  <meta property="og:title" content="Vietnam Nails · Halle (Saale)">
   <meta property="og:description" content="Nageldesign, Pediküre & Wimpern in der Innenstadt von Halle. Termin online anfragen.">
   <meta property="og:image" content="assets/img/gallery/rosa-marmor-gold.webp">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400;1,6..96,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
+  <script>document.documentElement.classList.add("js")</script>
 
   <script type="application/ld+json">
   {
@@ -25,13 +26,7 @@
     "name": "Vietnam Nails",
     "image": "assets/img/gallery/rosa-marmor-gold.webp",
     "telephone": "+49 345 68673949",
-    "address": {
-      "@type": "PostalAddress",
-      "streetAddress": "Rannische Str. 6",
-      "postalCode": "06108",
-      "addressLocality": "Halle (Saale)",
-      "addressCountry": "DE"
-    },
+    "address": { "@type": "PostalAddress", "streetAddress": "Rannische Str. 6", "postalCode": "06108", "addressLocality": "Halle (Saale)", "addressCountry": "DE" },
     "openingHoursSpecification": [
       { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"], "opens": "08:30", "closes": "18:30" },
       { "@type": "OpeningHoursSpecification", "dayOfWeek": "Saturday", "opens": "09:00", "closes": "16:00" }
@@ -44,382 +39,416 @@
 
 <a class="skip" href="#main">Zum Inhalt springen</a>
 
-<header class="site-header" data-header>
-  <div class="wrap header-inner">
-    <a href="#top" class="brand" aria-label="Vietnam Nails – Startseite">
-      <span class="brand-name">Vietnam Nails</span>
-      <span class="brand-sub">Halle (Saale)</span>
-    </a>
-    <nav class="nav" aria-label="Hauptnavigation" data-nav>
-      <a href="#leistungen">Leistungen &amp; Preise</a>
+<!-- ============ HEADER ============ -->
+<header class="hd" data-header>
+  <div class="hd-inner">
+    <nav class="hd-nav hd-left" aria-label="Hauptnavigation">
+      <a href="#leistungen">Leistungen</a>
       <a href="#galerie">Galerie</a>
       <a href="#studio">Studio</a>
-      <a href="#kontakt">Kontakt</a>
-      <a href="#termin" class="btn btn-small nav-cta">Termin buchen</a>
     </nav>
-    <button class="menu-toggle" aria-label="Menü öffnen" aria-expanded="false" data-menu-toggle>
+    <a href="#top" class="logo" aria-label="Vietnam Nails – zum Seitenanfang">
+      <span class="logo-main">Vietnam Nails</span>
+      <span class="logo-sub">Halle · Saale</span>
+    </a>
+    <div class="hd-right">
+      <a href="#kontakt" class="hd-link">Kontakt</a>
+      <button class="btn-line" data-book>Termin buchen</button>
+    </div>
+    <button class="burger" aria-label="Menü öffnen" aria-expanded="false" aria-controls="menu" data-burger>
       <span></span><span></span>
     </button>
   </div>
 </header>
 
+<div class="menu" id="menu" data-menu hidden>
+  <nav class="menu-nav" aria-label="Mobile Navigation">
+    <a href="#leistungen"><small>01</small>Leistungen</a>
+    <a href="#galerie"><small>02</small>Galerie</a>
+    <a href="#studio"><small>03</small>Studio</a>
+    <a href="#kontakt"><small>04</small>Kontakt</a>
+  </nav>
+  <div class="menu-foot">
+    <button class="btn-solid btn-invert" data-book>Termin buchen</button>
+    <p>Rannische Str. 6 · 06108 Halle<br><a href="tel:+4934568673949">0345 686 739 49</a></p>
+  </div>
+</div>
+
 <main id="main">
 
-  <!-- HERO -->
-  <section class="hero" id="top">
-    <div class="wrap hero-grid">
-      <div class="hero-copy">
-        <p class="eyebrow">Nagelstudio · Innenstadt Halle</p>
-        <h1>Nageldesign, Pediküre<br>&amp; Wimpern <em>mit Handschrift.</em></h1>
-        <p class="lead">Von zeitlosem French bis zu handgemalter Nail Art und 3D-Blüten – jedes Set wird bei uns individuell modelliert und gestaltet.</p>
-        <div class="hero-actions">
-          <a href="#termin" class="btn">Termin anfragen</a>
-          <a href="#leistungen" class="btn btn-ghost">Preise ansehen</a>
-        </div>
-        <dl class="hero-facts">
-          <div>
-            <dt>Heute</dt>
-            <dd data-open-status>Öffnungszeiten</dd>
-          </div>
-          <div>
-            <dt>Adresse</dt>
-            <dd>Rannische Str. 6<br>Nähe Franckeplatz</dd>
-          </div>
-          <div>
-            <dt>Telefon</dt>
-            <dd><a href="tel:+4934568673949">0345 686 739 49</a></dd>
-          </div>
-        </dl>
-      </div>
+  <!-- ============ HERO ============ -->
+  <section class="hero" id="top" data-theme="dark">
+    <div class="hero-img">
+      <img src="assets/img/gallery/stiletto-blau-rosen.webp" alt="" width="1400" height="1572" fetchpriority="high">
+    </div>
+    <div class="hero-side">
+      <img src="assets/img/gallery/perlmutt-chrome-sm.webp" alt="" width="700" height="761">
+    </div>
 
-      <div class="hero-media" aria-hidden="true">
-        <figure class="hm hm-1"><img src="assets/img/gallery/rosa-marmor-gold.webp" alt="" width="1200" height="1600" fetchpriority="high"></figure>
-        <figure class="hm hm-2"><img src="assets/img/gallery/tuerkis-3d-blumen-sm.webp" alt="" width="700" height="658"></figure>
-        <figure class="hm hm-3"><img src="assets/img/gallery/perlmutt-chrome-sm.webp" alt="" width="700" height="761"></figure>
+    <div class="hero-content">
+      <p class="kicker reveal">Nagelstudio · Innenstadt Halle</p>
+      <h1 class="hero-title">
+        <span class="line"><span>Die Kunst</span></span>
+        <span class="line"><span>schöner <em>Hände.</em></span></span>
+      </h1>
+      <div class="hero-bottom reveal">
+        <p>Modellage, Nail Art, Pediküre und Wimpern — präzise gearbeitet, individuell gestaltet.</p>
+        <button class="btn-solid btn-invert" data-book>Termin anfragen <i class="arr" aria-hidden="true"></i></button>
       </div>
+    </div>
+
+    <div class="hero-meta">
+      <span data-open-status>Rannische Str. 6</span>
+      <span class="scroll-cue" aria-hidden="true">Scroll</span>
     </div>
   </section>
 
-  <!-- MARQUEE / VALUES -->
-  <section class="strip" aria-label="Unsere Leistungen im Überblick">
-    <div class="wrap strip-inner">
-      <span>Neumodellage</span><i></i>
-      <span>Auffüllen</span><i></i>
-      <span>Nail Art</span><i></i>
-      <span>Pediküre</span><i></i>
-      <span>Wimpernverlängerung</span>
+  <!-- ============ INTRO ============ -->
+  <section class="intro" data-theme="light">
+    <div class="wrap intro-grid">
+      <p class="label reveal">— Willkommen</p>
+      <p class="intro-text reveal">Bei Vietnam Nails entsteht jedes Set in Handarbeit. Vom zeitlosen <em>French</em> bis zur aufwendigen <em>3D-Modellage</em> nehmen wir uns die Zeit, die gute Arbeit braucht.</p>
+      <ul class="pillars">
+        <li class="reveal"><span>I</span><h3>Handarbeit</h3><p>Jede Form, jede Länge, jedes Design wird von Hand modelliert und gemalt.</p></li>
+        <li class="reveal"><span>II</span><h3>Individuell</h3><p>Wir beraten Sie ehrlich und setzen Ihre Idee oder Inspiration um.</p></li>
+        <li class="reveal"><span>III</span><h3>Zentral</h3><p>Mitten in der Innenstadt, wenige Schritte von der Haltestelle Franckeplatz.</p></li>
+      </ul>
     </div>
   </section>
 
-  <!-- SERVICES -->
-  <section class="section" id="leistungen">
+  <!-- ============ MARQUEE ============ -->
+  <div class="marquee" data-theme="dark" aria-hidden="true">
+    <div class="marquee-track">
+      <span>Neumodellage</span><b></b><span><em>Nail Art</em></span><b></b><span>Pediküre</span><b></b><span><em>Chrome</em></span><b></b><span>Wimpern</span><b></b><span><em>Cat-Eye</em></span><b></b>
+      <span>Neumodellage</span><b></b><span><em>Nail Art</em></span><b></b><span>Pediküre</span><b></b><span><em>Chrome</em></span><b></b><span>Wimpern</span><b></b><span><em>Cat-Eye</em></span><b></b>
+    </div>
+  </div>
+
+  <!-- ============ LEISTUNGEN ============ -->
+  <section class="sec" id="leistungen" data-theme="light">
     <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow">Leistungen &amp; Preise</p>
-        <h2>Transparent, ohne Überraschungen.</h2>
-        <p class="section-intro">Der Grundpreis richtet sich nach der Leistung, Designs und Extras kommen je nach Aufwand hinzu. Gern beraten wir Sie vorab.</p>
+      <header class="sec-head">
+        <p class="label reveal">— Leistungen &amp; Preise</p>
+        <h2 class="reveal">Unser <em>Menü.</em></h2>
+      </header>
+
+      <!-- Hände -->
+      <div class="menu-block">
+        <div class="menu-cat reveal">
+          <span class="menu-num">01</span>
+          <h3>Hände</h3>
+          <p>Modellage mit Gel oder Acryl — Form und Länge nach Wunsch.</p>
+        </div>
+        <ul class="svc" data-hover-list>
+          <li class="reveal" data-img="rosa-marmor-gold"><span class="svc-name">Neumodellage</span><span class="svc-dots"></span><span class="svc-price">33 €</span></li>
+          <li class="reveal" data-img="nude-weiss-ombre"><span class="svc-name">Auffüllen</span><span class="svc-dots"></span><span class="svc-price">30 €</span></li>
+        </ul>
       </div>
 
-      <div class="tabs" role="tablist" aria-label="Kategorien">
-        <button role="tab" aria-selected="true" aria-controls="p-nails" id="t-nails" data-tab>Nageldesign</button>
-        <button role="tab" aria-selected="false" aria-controls="p-pedi" id="t-pedi" data-tab tabindex="-1">Pediküre</button>
-        <button role="tab" aria-selected="false" aria-controls="p-lash" id="t-lash" data-tab tabindex="-1">Wimpern</button>
+      <div class="menu-block">
+        <div class="menu-cat reveal">
+          <span class="menu-num">02</span>
+          <h3>Design &amp; Extras</h3>
+          <p>Zusätzlich zum jeweiligen Grundpreis.</p>
+        </div>
+        <ul class="svc svc-compact" data-hover-list>
+          <li class="reveal" data-img="nude-glitzer-schleifen"><span class="svc-name">French oder Farblackierung</span><span class="svc-dots"></span><span class="svc-price">+ 5 €</span></li>
+          <li class="reveal" data-img="hellblau-goldfolie"><span class="svc-name">Überlänge <small>je nach Länge</small></span><span class="svc-dots"></span><span class="svc-price">+ 3–10 €</span></li>
+          <li class="reveal" data-img="tuerkis-3d-blumen"><span class="svc-name">3D-Blumendesign</span><span class="svc-dots"></span><span class="svc-price">+ 4 €</span></li>
+          <li class="reveal" data-img="stiletto-tuerkis-gold"><span class="svc-name">Cat-Eye-Effekt</span><span class="svc-dots"></span><span class="svc-price">+ 8–10 €</span></li>
+          <li class="reveal" data-img="perlmutt-chrome"><span class="svc-name">Chrome-Effekt</span><span class="svc-dots"></span><span class="svc-price">+ 5–10 €</span></li>
+          <li class="reveal" data-img="halloween-patchwork"><span class="svc-name">Nageldesign — gesamtes Set</span><span class="svc-dots"></span><span class="svc-price">ab 10 €</span></li>
+          <li class="reveal" data-img="nude-braun-blume"><span class="svc-name">Nageldesign — pro Nagel</span><span class="svc-dots"></span><span class="svc-price">ab 2 €</span></li>
+          <li class="reveal" data-img="blau-ombre-glitzer"><span class="svc-name">Zwei zusätzliche Nagelfarben</span><span class="svc-dots"></span><span class="svc-price">+ 3 €</span></li>
+          <li class="reveal" data-img="tuerkis-schwarz-schleifen"><span class="svc-name">Zwei Swarovski- oder Schmucksteine</span><span class="svc-dots"></span><span class="svc-price">+ 3 €</span></li>
+        </ul>
       </div>
 
-      <!-- Nageldesign -->
-      <div class="panel" role="tabpanel" id="p-nails" aria-labelledby="t-nails">
-        <div class="price-grid">
-          <div class="price-card">
-            <h3>Grundpreise</h3>
-            <ul class="price-list">
-              <li><span>Neumodellage</span><b>33 €</b></li>
-              <li><span>Auffüllen</span><b>30 €</b></li>
+      <div class="menu-block menu-block-full">
+        <div class="menu-cat reveal">
+          <span class="menu-num">03</span>
+          <h3>Füße</h3>
+          <p>Pflege, Entspannung und auf Wunsch die passende Nagelbeschichtung.</p>
+        </div>
+        <div class="pedi">
+          <article class="pedi-card reveal">
+            <header><h4>Standard-Pediküre</h4><span>ca. 30 Min.</span></header>
+            <p class="pedi-price">25 €</p>
+            <p class="pedi-incl">Fußbad · Nägel kürzen &amp; formen · Peeling · Nagelhaut entfernen · Hornhaut entfernen · Fußmassage mit Pflegecreme</p>
+            <ul class="svc svc-mini">
+              <li><span class="svc-name">mit Shellac-Farblackierung</span><span class="svc-dots"></span><span class="svc-price">42 €</span></li>
+              <li><span class="svc-name">mit Pulvermodellage &amp; French</span><span class="svc-dots"></span><span class="svc-price">50 €</span></li>
             </ul>
-            <figure class="price-img"><img src="assets/img/gallery/nude-weiss-ombre-sm.webp" alt="Lange Nägel in Nude mit weißem Ombré" loading="lazy" width="700" height="844"></figure>
-          </div>
-          <div class="price-card">
-            <h3>Aufpreise</h3>
-            <p class="price-note">Zusätzlich zum jeweiligen Grundpreis</p>
-            <ul class="price-list">
-              <li><span>French oder Farblackierung</span><b>+5 €</b></li>
-              <li><span>Überlänge <small>je nach Länge</small></span><b>+3–10 €</b></li>
-              <li><span>3D-Blumendesign</span><b>+4 €</b></li>
-              <li><span>Cat-Eye-Effekt</span><b>+8–10 €</b></li>
-              <li><span>Chrome-Effekt</span><b>+5–10 €</b></li>
-              <li><span>Nageldesign für das gesamte Set</span><b>ab 10 €</b></li>
-              <li><span>Nageldesign pro Nagel</span><b>ab 2 €</b></li>
-              <li><span>Zwei zusätzliche Nagelfarben</span><b>+3 €</b></li>
-              <li><span>Zwei Swarovski- oder ähnlich große Schmucksteine</span><b>+3 €</b></li>
+          </article>
+          <article class="pedi-card pedi-card-dark reveal">
+            <header><h4>Deluxe-Pediküre</h4><span>ca. 41 Min.</span></header>
+            <p class="pedi-price">36 €</p>
+            <p class="pedi-incl">Alle Leistungen der Standard-Pediküre · Sprudelndes Fußbad · Fußmaske · Massage mit Massagekerze (10 Min.)</p>
+            <ul class="svc svc-mini">
+              <li><span class="svc-name">mit Shellac-Farblackierung</span><span class="svc-dots"></span><span class="svc-price">52 €</span></li>
+              <li><span class="svc-name">mit Pulvermodellage &amp; French</span><span class="svc-dots"></span><span class="svc-price">60 €</span></li>
             </ul>
-          </div>
+          </article>
+          <article class="pedi-card reveal">
+            <header><h4>Nur Fußnägel</h4><span>ohne Fußpflege</span></header>
+            <p class="pedi-price"><small>ab</small> 29 €</p>
+            <p class="pedi-incl">Nagelbeschichtung für die Füße, ohne Pediküre.</p>
+            <ul class="svc svc-mini">
+              <li><span class="svc-name">Shellac-Lackierung</span><span class="svc-dots"></span><span class="svc-price">29 €</span></li>
+              <li><span class="svc-name">Pulvermodellage</span><span class="svc-dots"></span><span class="svc-price">35 €</span></li>
+            </ul>
+          </article>
         </div>
       </div>
 
-      <!-- Pediküre -->
-      <div class="panel" role="tabpanel" id="p-pedi" aria-labelledby="t-pedi" hidden>
-        <div class="price-grid price-grid-3">
-          <div class="price-card">
-            <p class="price-num">01</p>
-            <h3>Standard-Fußpediküre</h3>
-            <p class="price-meta">ca. 30 Minuten <b>25 €</b></p>
-            <ul class="checks">
-              <li>Fußbad</li>
-              <li>Fußnägel kürzen und formen</li>
-              <li>Peeling</li>
-              <li>Nagelhaut entfernen</li>
-              <li>Hornhaut entfernen</li>
-              <li>Fußmassage mit Pflegecreme</li>
-            </ul>
-            <ul class="price-list price-list-sub">
-              <li><span>mit Shellac-Farblackierung</span><b>42 €</b></li>
-              <li><span>mit Pulvermodellage &amp; French</span><b>50 €</b></li>
-            </ul>
-          </div>
-          <div class="price-card price-card-feature">
-            <p class="price-num">02</p>
-            <h3>Deluxe-Fußpediküre</h3>
-            <p class="price-meta">ca. 41 Minuten <b>36 €</b></p>
-            <ul class="checks">
-              <li>Alle Leistungen der Standard-Pediküre</li>
-              <li>Sprudelndes Fußbad</li>
-              <li>Fußmaske</li>
-              <li>Massage mit Massagekerze (10 Min.)</li>
-            </ul>
-            <ul class="price-list price-list-sub">
-              <li><span>mit Shellac-Farblackierung</span><b>52 €</b></li>
-              <li><span>mit Pulvermodellage &amp; French</span><b>60 €</b></li>
-            </ul>
-          </div>
-          <div class="price-card">
-            <p class="price-num">03</p>
-            <h3>Nagelkosmetik ohne Pediküre</h3>
-            <p class="price-meta">nur Fußnägel, ohne Fußpflege</p>
-            <ul class="price-list">
-              <li><span>Shellac-Lackierung</span><b>29 €</b></li>
-              <li><span>Pulvermodellage</span><b>35 €</b></li>
-            </ul>
-          </div>
+      <div class="menu-block">
+        <div class="menu-cat reveal">
+          <span class="menu-num">04</span>
+          <h3>Wimpern</h3>
+          <p>Einzeln gesetzt, abgestimmt auf Ihre Augenform.</p>
         </div>
+        <ul class="svc" data-hover-list>
+          <li class="reveal" data-img="wimpern"><span class="svc-name">Wimpernverlängerung — Neuanlage</span><span class="svc-dots"></span><span class="svc-price">auf Anfrage</span></li>
+          <li class="reveal" data-img="wimpern"><span class="svc-name">Wimpernverlängerung — Auffüllen</span><span class="svc-dots"></span><span class="svc-price">auf Anfrage</span></li>
+        </ul>
       </div>
 
-      <!-- Wimpern -->
-      <div class="panel" role="tabpanel" id="p-lash" aria-labelledby="t-lash" hidden>
-        <div class="lash">
-          <figure class="lash-img"><img src="assets/img/gallery/wimpern-sm.webp" alt="Wimpernverlängerung, Nahaufnahme" loading="lazy" width="700" height="941"></figure>
-          <div class="lash-copy">
-            <h3>Wimpernverlängerung</h3>
-            <p>Natürlich betont oder voluminös – wir setzen jede Wimper einzeln und passen Länge und Schwung an Ihre Augenform an.</p>
-            <ul class="price-list">
-              <li><span>Neuanlage</span><b>auf Anfrage</b></li>
-              <li><span>Auffüllen</span><b>auf Anfrage</b></li>
-            </ul>
-            <a href="#termin" class="btn btn-ghost" data-preselect="wimpern">Beratungstermin anfragen</a>
-          </div>
-        </div>
+      <div class="menu-cta reveal">
+        <p>Gutscheine sind im Studio erhältlich.</p>
+        <button class="btn-solid" data-book>Termin anfragen <i class="arr" aria-hidden="true"></i></button>
       </div>
     </div>
+    <div class="hover-img" data-hover-img aria-hidden="true"><img alt=""></div>
   </section>
 
-  <!-- GALLERY -->
-  <section class="section section-alt" id="galerie">
+  <!-- ============ GALERIE ============ -->
+  <section class="sec sec-dark" id="galerie" data-theme="dark">
     <div class="wrap">
-      <div class="section-head section-head-row">
+      <header class="sec-head sec-head-split">
         <div>
-          <p class="eyebrow">Galerie</p>
-          <h2>Arbeiten aus unserem Studio.</h2>
+          <p class="label reveal">— Galerie</p>
+          <h2 class="reveal">Aus unserem <em>Studio.</em></h2>
         </div>
-        <div class="filters" role="group" aria-label="Galerie filtern">
-          <button class="chip is-active" data-filter="all">Alle</button>
-          <button class="chip" data-filter="elegant">Natürlich &amp; elegant</button>
-          <button class="chip" data-filter="color">Farbe</button>
-          <button class="chip" data-filter="art">Nail Art</button>
-          <button class="chip" data-filter="lash">Wimpern</button>
+        <div class="filters reveal" role="group" aria-label="Galerie filtern">
+          <button class="is-active" data-filter="all">Alle</button>
+          <button data-filter="elegant">Elegant</button>
+          <button data-filter="color">Farbe</button>
+          <button data-filter="art">Nail Art</button>
+          <button data-filter="lash">Wimpern</button>
         </div>
-      </div>
-
+      </header>
       <div class="gallery" data-gallery></div>
     </div>
   </section>
 
-  <!-- STUDIO -->
-  <section class="section" id="studio">
+  <!-- ============ STUDIO ============ -->
+  <section class="sec" id="studio" data-theme="light">
     <div class="wrap studio">
-      <figure class="studio-img"><img src="assets/img/gallery/stiletto-blau-rosen.webp" alt="Stiletto-Nägel in Hellblau mit modellierten 3D-Rosen" loading="lazy" width="1400" height="1572"></figure>
+      <figure class="studio-img reveal-img">
+        <img src="assets/img/gallery/rosa-marmor-gold.webp" alt="Rosa Nägel mit Marmor und Blattgold" loading="lazy" width="1200" height="1600">
+      </figure>
       <div class="studio-copy">
-        <p class="eyebrow">Das Studio</p>
-        <h2>Sorgfalt, die man sieht.</h2>
-        <p>Mitten in der Innenstadt, nur wenige Schritte von der Haltestelle Franckeplatz, nehmen wir uns Zeit für Hände und Füße. Ob schlichte Pflege oder aufwendiges Design – wir arbeiten sauber, präzise und hören zu, was Sie sich wünschen.</p>
-        <ul class="points">
-          <li><b>Individuelles Design</b><span>Handgemalt, 3D-Modellage, Chrome, Cat-Eye, Steine.</span></li>
-          <li><b>Jede Form, jede Länge</b><span>Von kurz &amp; natürlich bis Stiletto und Coffin.</span></li>
-          <li><b>Gutscheine</b><span>Im Studio erhältlich – das passende Geschenk.</span></li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <!-- BOOKING -->
-  <section class="section section-dark" id="termin">
-    <div class="wrap booking">
-      <div class="booking-intro">
-        <p class="eyebrow">Online-Terminanfrage</p>
-        <h2>In drei Schritten zum Wunschtermin.</h2>
-        <p>Wählen Sie Leistung und Zeit – wir bestätigen Ihren Termin schnellstmöglich per WhatsApp oder Telefon.</p>
-        <p class="booking-alt">Lieber direkt?<br>
-          <a href="tel:+4934568673949">0345 686 739 49</a><br>
-          <a href="tel:+4915227859766">01522 785 97 66</a>
-        </p>
-      </div>
-
-      <form class="booking-form" data-booking novalidate>
-        <ol class="steps" aria-label="Fortschritt">
-          <li class="is-current" data-step-label="1"><span>1</span>Leistung</li>
-          <li data-step-label="2"><span>2</span>Termin</li>
-          <li data-step-label="3"><span>3</span>Kontakt</li>
+        <p class="label reveal">— Ihr Besuch</p>
+        <h2 class="reveal">Zeit für <em>sich.</em></h2>
+        <p class="reveal">Nehmen Sie Platz, wir kümmern uns um den Rest. So läuft Ihr Termin bei uns ab:</p>
+        <ol class="process">
+          <li class="reveal"><span>01</span><div><h3>Beratung</h3><p>Form, Länge, Farbe — gern auch nach Ihrem Inspirationsbild.</p></div></li>
+          <li class="reveal"><span>02</span><div><h3>Vorbereitung</h3><p>Sorgfältige Pflege von Naturnagel und Nagelhaut.</p></div></li>
+          <li class="reveal"><span>03</span><div><h3>Modellage &amp; Design</h3><p>Präzise aufgebaut, von Hand gestaltet.</p></div></li>
+          <li class="reveal"><span>04</span><div><h3>Finish</h3><p>Feinschliff, Glanz und Pflege — fertig für den Alltag.</p></div></li>
         </ol>
-
-        <!-- Step 1 -->
-        <fieldset class="step" data-step="1">
-          <legend class="sr-only">Leistung wählen</legend>
-          <div class="svc-group">
-            <p class="svc-title">Hände</p>
-            <div class="svc-options" data-services="hands"></div>
-          </div>
-          <div class="svc-group">
-            <p class="svc-title">Füße</p>
-            <div class="svc-options" data-services="feet"></div>
-          </div>
-          <div class="svc-group">
-            <p class="svc-title">Wimpern</p>
-            <div class="svc-options" data-services="lash"></div>
-          </div>
-
-          <details class="extras" data-extras>
-            <summary>Extras hinzufügen <small>(optional)</small></summary>
-            <div class="extras-list" data-extras-list></div>
-          </details>
-
-          <p class="form-error" data-error="1" hidden>Bitte wählen Sie eine Leistung.</p>
-          <div class="step-nav">
-            <span></span>
-            <button type="button" class="btn btn-light" data-next>Weiter</button>
-          </div>
-        </fieldset>
-
-        <!-- Step 2 -->
-        <fieldset class="step" data-step="2" hidden>
-          <legend class="sr-only">Datum und Uhrzeit wählen</legend>
-          <div class="date-head">
-            <p class="svc-title">Datum</p>
-            <div class="date-arrows">
-              <button type="button" aria-label="Frühere Tage" data-date-prev>&larr;</button>
-              <button type="button" aria-label="Spätere Tage" data-date-next>&rarr;</button>
-            </div>
-          </div>
-          <div class="dates" data-dates></div>
-          <p class="svc-title">Uhrzeit</p>
-          <div class="times" data-times><p class="muted">Bitte zuerst ein Datum wählen.</p></div>
-          <p class="form-error" data-error="2" hidden>Bitte wählen Sie Datum und Uhrzeit.</p>
-          <div class="step-nav">
-            <button type="button" class="btn btn-ghost-light" data-prev>Zurück</button>
-            <button type="button" class="btn btn-light" data-next>Weiter</button>
-          </div>
-        </fieldset>
-
-        <!-- Step 3 -->
-        <fieldset class="step" data-step="3" hidden>
-          <legend class="sr-only">Kontaktdaten</legend>
-          <div class="fields">
-            <label class="field">
-              <span>Name</span>
-              <input type="text" name="name" autocomplete="name" required>
-            </label>
-            <label class="field">
-              <span>Telefon / WhatsApp</span>
-              <input type="tel" name="phone" autocomplete="tel" inputmode="tel" required>
-            </label>
-            <label class="field field-full">
-              <span>Wunsch oder Anmerkung <small>(optional)</small></span>
-              <textarea name="note" rows="3" placeholder="z. B. Form, Länge, Farbe oder Inspiration"></textarea>
-            </label>
-            <label class="check field-full">
-              <input type="checkbox" name="consent" required>
-              <span>Ich bin einverstanden, dass meine Angaben zur Bearbeitung der Terminanfrage verwendet werden. Mehr in der <a href="datenschutz.html">Datenschutzerklärung</a>.</span>
-            </label>
-          </div>
-
-          <div class="summary" data-summary></div>
-
-          <p class="form-error" data-error="3" hidden>Bitte Name, Telefonnummer und Einverständnis angeben.</p>
-          <div class="step-nav">
-            <button type="button" class="btn btn-ghost-light" data-prev>Zurück</button>
-            <button type="submit" class="btn btn-light">Per WhatsApp anfragen</button>
-          </div>
-          <p class="fine">Die Anfrage ist erst nach unserer Bestätigung verbindlich.</p>
-        </fieldset>
-      </form>
+      </div>
     </div>
   </section>
 
-  <!-- CONTACT -->
-  <section class="section" id="kontakt">
+  <!-- ============ BOOKING CTA ============ -->
+  <section class="cta" id="termin" data-theme="dark">
+    <div class="cta-bg"><img src="assets/img/gallery/stiletto-tuerkis-gold.webp" alt="" loading="lazy" width="1080" height="1350"></div>
+    <div class="wrap cta-inner">
+      <p class="label reveal">— Online-Terminanfrage</p>
+      <h2 class="cta-title reveal">Ihr <em>Termin.</em></h2>
+      <p class="reveal">Leistung wählen, Wunschzeit aussuchen, fertig — in weniger als einer Minute.</p>
+      <button class="btn-solid btn-invert btn-lg reveal" data-book>Jetzt Termin anfragen <i class="arr" aria-hidden="true"></i></button>
+      <p class="cta-alt reveal">oder telefonisch: <a href="tel:+4934568673949">0345 686 739 49</a></p>
+    </div>
+  </section>
+
+  <!-- ============ KONTAKT ============ -->
+  <section class="sec" id="kontakt" data-theme="light">
     <div class="wrap contact">
-      <div class="contact-info">
-        <p class="eyebrow">Kontakt &amp; Anfahrt</p>
-        <h2>Besuchen Sie uns.</h2>
-
-        <div class="contact-block">
-          <h3>Adresse</h3>
-          <p>Vietnam Nails<br>Rannische Str. 6<br>06108 Halle (Saale)</p>
-          <p class="muted">Innenstadt, Nähe Haltestelle Franckeplatz</p>
-          <a class="link" href="https://maps.app.goo.gl/wQZEiNsJ5wFjue3s9" target="_blank" rel="noopener">Route in Google Maps &rarr;</a>
-        </div>
-
-        <div class="contact-block">
-          <h3>Telefon</h3>
-          <p><a href="tel:+4934568673949">0345 686 739 49</a><br>
-             <a href="tel:+4915227859766">01522 785 97 66</a> <span class="muted">(Mobil / WhatsApp)</span></p>
-        </div>
-
-        <div class="contact-block">
-          <h3>Öffnungszeiten</h3>
-          <table class="hours" data-hours></table>
-          <p class="muted">Sonn- &amp; Feiertage nach Vereinbarung</p>
+      <div>
+        <header class="sec-head">
+          <p class="label reveal">— Kontakt</p>
+          <h2 class="reveal">Besuchen <em>Sie uns.</em></h2>
+        </header>
+        <div class="c-grid">
+          <div class="c-item reveal">
+            <h3>Adresse</h3>
+            <p>Rannische Str. 6<br>06108 Halle (Saale)</p>
+            <p class="dim">Innenstadt, Nähe Franckeplatz</p>
+            <a class="ulink" href="https://maps.app.goo.gl/wQZEiNsJ5wFjue3s9" target="_blank" rel="noopener">Route planen</a>
+          </div>
+          <div class="c-item reveal">
+            <h3>Telefon</h3>
+            <p><a href="tel:+4934568673949">0345 686 739 49</a></p>
+            <p><a href="tel:+4915227859766">01522 785 97 66</a></p>
+            <p class="dim">Mobil · WhatsApp</p>
+          </div>
+          <div class="c-item c-item-wide reveal">
+            <h3>Öffnungszeiten</h3>
+            <table class="hours" data-hours></table>
+            <p class="dim">Sonn- &amp; Feiertage nach Vereinbarung</p>
+          </div>
         </div>
       </div>
-
-      <div class="map" data-map>
-        <div class="map-consent">
-          <p>Beim Laden der Karte werden Daten an Google übertragen.</p>
-          <button type="button" class="btn btn-ghost" data-map-load>Karte anzeigen</button>
+      <div class="map reveal" data-map>
+        <div class="map-ph">
+          <p class="map-addr">Rannische Str. 6<br><em>Halle (Saale)</em></p>
+          <button class="btn-line btn-line-dark" data-map-load>Karte laden</button>
+          <p class="map-note">Beim Laden werden Daten an Google übertragen.</p>
         </div>
       </div>
     </div>
   </section>
-
 </main>
 
-<footer class="site-footer">
-  <div class="wrap footer-inner">
-    <div>
-      <p class="brand-name">Vietnam Nails</p>
-      <p class="muted">Rannische Str. 6 · 06108 Halle (Saale)</p>
+<!-- ============ FOOTER ============ -->
+<footer class="ft" data-theme="dark">
+  <div class="wrap">
+    <div class="ft-top">
+      <p class="ft-claim">Schöne Nägel für<br><em>besondere Momente.</em></p>
+      <button class="btn-line" data-book>Termin buchen</button>
     </div>
-    <nav class="footer-nav" aria-label="Rechtliches">
-      <a href="impressum.html">Impressum</a>
-      <a href="datenschutz.html">Datenschutz</a>
-    </nav>
-    <p class="muted small">&copy; <span data-year></span> Vietnam Nails</p>
+    <p class="ft-word" aria-hidden="true">Vietnam Nails</p>
+    <div class="ft-bottom">
+      <span>&copy; <span data-year></span> Vietnam Nails · Halle (Saale)</span>
+      <nav aria-label="Rechtliches"><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a></nav>
+    </div>
   </div>
 </footer>
 
-<a href="#termin" class="mobile-cta">Termin buchen</a>
+<button class="fab" data-book aria-label="Termin buchen">Termin buchen</button>
 
-<div class="lightbox" data-lightbox hidden>
-  <button class="lb-close" aria-label="Schließen" data-lb-close>&times;</button>
-  <button class="lb-prev" aria-label="Vorheriges Bild" data-lb-prev>&larr;</button>
-  <img alt="" data-lb-img>
-  <button class="lb-next" aria-label="Nächstes Bild" data-lb-next>&rarr;</button>
+<!-- ============ LIGHTBOX ============ -->
+<div class="lb" data-lb role="dialog" aria-modal="true" aria-label="Bildansicht" hidden>
+  <button class="lb-x" data-lb-close aria-label="Schließen"></button>
+  <button class="lb-nav lb-prev" data-lb-prev aria-label="Vorheriges Bild"></button>
+  <figure><img alt="" data-lb-img><figcaption data-lb-cap></figcaption></figure>
+  <button class="lb-nav lb-next" data-lb-next aria-label="Nächstes Bild"></button>
+  <p class="lb-count" data-lb-count></p>
+</div>
+
+<!-- ============ BOOKING ============ -->
+<div class="bk" data-bk role="dialog" aria-modal="true" aria-labelledby="bk-title" hidden>
+  <div class="bk-bar">
+    <span class="bk-logo">Vietnam Nails</span>
+    <div class="bk-progress" aria-hidden="true"><span data-bk-progress></span></div>
+    <span class="bk-stepinfo" data-bk-stepinfo></span>
+    <button class="bk-x" data-bk-close aria-label="Buchung schließen"></button>
+  </div>
+
+  <div class="bk-body">
+    <div class="bk-main" data-bk-main>
+      <!-- STEP 1 -->
+      <section class="bk-step" data-bk-step="1">
+        <p class="label">Schritt 1 von 4</p>
+        <h2 id="bk-title" class="bk-h">Was dürfen wir <em>für Sie tun?</em></h2>
+        <p class="bk-lead">Pro Bereich eine Leistung — Hände und Füße lassen sich kombinieren.</p>
+        <div class="bk-tabs" role="tablist" data-bk-tabs></div>
+        <div class="bk-services" data-bk-services></div>
+        <div class="bk-extras" data-bk-extras hidden>
+          <h3 class="bk-sub">Design &amp; Extras <span>optional</span></h3>
+          <div class="bk-extra-grid" data-bk-extra-grid></div>
+        </div>
+      </section>
+
+      <!-- STEP 2 -->
+      <section class="bk-step" data-bk-step="2" hidden>
+        <p class="label">Schritt 2 von 4</p>
+        <h2 class="bk-h">Wann passt es <em>Ihnen?</em></h2>
+        <p class="bk-lead">Wählen Sie Ihren Wunschtermin. Wir bestätigen ihn kurzfristig.</p>
+        <div class="cal">
+          <div class="cal-head">
+            <button class="cal-nav" data-cal-prev aria-label="Vorheriger Monat"></button>
+            <p class="cal-month" data-cal-month aria-live="polite"></p>
+            <button class="cal-nav cal-nav-next" data-cal-next aria-label="Nächster Monat"></button>
+          </div>
+          <div class="cal-dow"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div>
+          <div class="cal-grid" data-cal-grid></div>
+        </div>
+        <div class="slots" data-slots></div>
+      </section>
+
+      <!-- STEP 3 -->
+      <section class="bk-step" data-bk-step="3" hidden>
+        <p class="label">Schritt 3 von 4</p>
+        <h2 class="bk-h">Ihre <em>Angaben.</em></h2>
+        <p class="bk-lead">Damit wir Ihren Termin bestätigen können.</p>
+        <form class="bk-form" data-bk-form novalidate>
+          <div class="fl">
+            <input id="f-name" name="name" type="text" autocomplete="name" placeholder=" " required>
+            <label for="f-name">Vor- und Nachname</label>
+          </div>
+          <div class="fl">
+            <input id="f-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder=" " required>
+            <label for="f-phone">Telefon / WhatsApp</label>
+          </div>
+          <div class="fl fl-area">
+            <textarea id="f-note" name="note" rows="3" placeholder=" "></textarea>
+            <label for="f-note">Wunsch, Form oder Inspiration <span>(optional)</span></label>
+          </div>
+          <fieldset class="bk-radio">
+            <legend>Waren Sie schon bei uns?</legend>
+            <label><input type="radio" name="visit" value="Neukundin/Neukunde" checked><span>Erster Besuch</span></label>
+            <label><input type="radio" name="visit" value="Stammkundin/Stammkunde"><span>Ich war schon da</span></label>
+          </fieldset>
+          <label class="bk-consent">
+            <input type="checkbox" name="consent" required>
+            <span>Ich bin einverstanden, dass meine Angaben zur Bearbeitung der Terminanfrage verwendet werden (<a href="datenschutz.html" target="_blank">Datenschutz</a>).</span>
+          </label>
+        </form>
+      </section>
+
+      <!-- STEP 4 -->
+      <section class="bk-step" data-bk-step="4" hidden>
+        <p class="label">Schritt 4 von 4</p>
+        <h2 class="bk-h">Alles <em>richtig?</em></h2>
+        <p class="bk-lead">Prüfen Sie Ihre Anfrage. Mit dem Absenden öffnet sich WhatsApp mit Ihrer fertigen Nachricht.</p>
+        <div class="review" data-review></div>
+      </section>
+
+      <!-- DONE -->
+      <section class="bk-step bk-done" data-bk-step="5" hidden>
+        <div class="done-mark" aria-hidden="true"></div>
+        <p class="label">Anfrage vorbereitet</p>
+        <h2 class="bk-h">Danke, <em data-done-name></em></h2>
+        <p class="bk-lead">Bitte senden Sie die Nachricht in WhatsApp ab. Sobald wir Ihren Termin bestätigt haben, melden wir uns bei Ihnen.</p>
+        <div class="done-card" data-done-card></div>
+        <div class="done-actions">
+          <button class="btn-solid" data-done-wa>WhatsApp erneut öffnen</button>
+          <button class="btn-line btn-line-dark" data-done-ics>In Kalender eintragen</button>
+        </div>
+        <p class="done-note">Kein WhatsApp? Rufen Sie uns an: <a href="tel:+4934568673949">0345 686 739 49</a></p>
+      </section>
+    </div>
+
+    <aside class="bk-aside" data-bk-aside>
+      <div class="sum">
+        <p class="sum-label">Ihre Auswahl</p>
+        <div class="sum-items" data-sum-items><p class="sum-empty">Noch keine Leistung gewählt.</p></div>
+        <div class="sum-when" data-sum-when></div>
+        <div class="sum-total"><span>Gesamt</span><b data-sum-total>—</b></div>
+        <p class="sum-hint">Endpreis je nach Design und Aufwand.</p>
+      </div>
+    </aside>
+  </div>
+
+  <div class="bk-foot">
+    <button class="bk-back" data-bk-back>Zurück</button>
+    <button class="bk-sumtoggle" data-bk-sumtoggle aria-expanded="false"><span data-bk-mini>—</span></button>
+    <p class="bk-err" data-bk-err role="alert"></p>
+    <button class="btn-solid bk-next" data-bk-next>Weiter</button>
+  </div>
 </div>
 
 <script src="assets/js/main.js" defer></script>
