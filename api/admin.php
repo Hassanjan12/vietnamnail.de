@@ -182,15 +182,16 @@ switch ($action) {
       'views30' => array_sum(array_map(fn($x) => $x['views'], $series)),
       'sources' => $sources,
       'devices' => $devices,
-      'pending' => $cnt("SELECT COUNT(*) FROM bookings WHERE status = 'pending' AND date >= ?", [$today]),
+      'online7' => $cnt("SELECT COUNT(*) FROM bookings WHERE source = 'online' AND created_at >= ?", [(new DateTime())->modify('-6 days')->format('Y-m-d')]),
       'today' => $cnt("SELECT COUNT(*) FROM bookings WHERE date = ? AND status IN ('pending','confirmed','done')", [$today]),
       'week' => $cnt("SELECT COUNT(*) FROM bookings WHERE date BETWEEN ? AND ? AND status IN ('pending','confirmed','done')", [$today, $weekEnd]),
       'online30' => $cnt("SELECT COUNT(*) FROM bookings WHERE source = 'online' AND created_at >= ?", [$start]),
     ]);
   }
 
-  case 'pending': {
-    $st = $db->prepare("SELECT * FROM bookings WHERE status = 'pending' AND date >= ? ORDER BY date, time");
+  case 'recent': {
+    // Zuletzt online gebuchte, noch anstehende Termine (neueste zuerst)
+    $st = $db->prepare("SELECT * FROM bookings WHERE source = 'online' AND date >= ? AND status != 'cancelled' ORDER BY created_at DESC LIMIT 8");
     $st->execute([date('Y-m-d')]);
     vn_json(['ok' => true, 'bookings' => array_map('vn_booking_out', $st->fetchAll())]);
   }

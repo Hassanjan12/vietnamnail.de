@@ -448,7 +448,7 @@
       els.progress.style.width = `${n > STEPS ? 100 : pct}%`;
       els.stepinfo.textContent = n <= STEPS ? `Schritt ${n} / ${STEPS}` : "Fertig";
       els.back.classList.toggle("is-off", n === 1);
-      els.nextBtn.textContent = n === STEPS ? "Anfrage senden" : "Weiter";
+      els.nextBtn.textContent = n === STEPS ? "Termin buchen" : "Weiter";
       els.foot.classList.toggle("is-done", n > STEPS);
       els.aside.hidden = n > STEPS;
       setSheet(false);
@@ -479,11 +479,11 @@
     const waMessage = () => {
       const items = chosen();
       return [
-        "Hallo Vietnam Nails, ich möchte gern einen Termin anfragen:",
+        "Hallo Vietnam Nails, ich möchte gern einen Termin buchen:",
         "",
         `• Leistung: ${items.map(({ item }) => item.name).join(" + ")}`,
         S.extras.size ? `• Extras: ${extrasList().map(x => x.name).join(", ")}` : null,
-        `• Wunschtermin: ${dateLong()}, ${nice(S.time)} Uhr`,
+        `• Termin: ${dateLong()}, ${nice(S.time)} Uhr`,
         `• Preis laut Website: ${totals().txt}`,
         "",
         `Name: ${fv("name")}`,
@@ -491,7 +491,7 @@
         `Besuch: ${els.form.elements.visit.value}`,
         fv("note") ? `Wunsch: ${fv("note")}` : null,
         "",
-        `Anfrage-Nr.: ${S.ref}`
+        `Nr.: ${S.ref}`
       ].filter(l => l !== null).join("\n");
     };
     const openWa = () => window.open(`https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(waMessage())}`, "_blank", "noopener");
@@ -505,7 +505,7 @@
       if (sending) return;
       sending = true;
       els.nextBtn.disabled = true;
-      els.nextBtn.textContent = "Wird gesendet …";
+      els.nextBtn.textContent = "Wird gebucht …";
       const payload = {
         services: chosen().map(({ item }) => item.id), extras: [...S.extras],
         date: ymd(S.date), time: S.time,
@@ -532,20 +532,19 @@
       } finally {
         sending = false;
         els.nextBtn.disabled = false;
-        els.nextBtn.textContent = S.step === STEPS ? "Anfrage senden" : "Weiter";
+        els.nextBtn.textContent = S.step === STEPS ? "Termin buchen" : "Weiter";
       }
       S.saved = saved;
       $("[data-done-name]").textContent = fv("name").split(" ")[0] + ".";
-      $("[data-done-label]").textContent = saved ? "Anfrage eingegangen" : "Anfrage vorbereitet";
+      $("[data-done-label]").textContent = saved ? "Termin gebucht" : "Fast geschafft";
       $("[data-done-text]").textContent = saved
-        ? "Ihre Terminanfrage ist bei uns angekommen. Wir prüfen sie und bestätigen Ihren Termin kurzfristig per WhatsApp oder Telefon."
-        : "Bitte senden Sie die Nachricht in WhatsApp ab. Sobald wir Ihren Termin bestätigt haben, melden wir uns bei Ihnen.";
-      $("[data-done-wa]").textContent = saved ? "Inspirationsbild per WhatsApp senden" : "WhatsApp erneut öffnen";
+        ? "Vielen Dank für Ihre Buchung. Wir freuen uns auf Sie!"
+        : "Bitte senden Sie die vorbereitete Nachricht in WhatsApp ab – dann ist Ihr Termin bei uns eingetragen.";
+      $("[data-done-wa]").hidden = saved;
       $("[data-done-card]").innerHTML = [
-        ["Anfrage-Nr.", S.ref],
-        ["Leistung", chosen().map(({ item }) => esc(item.name)).join(" + ")],
         ["Termin", `${dateLong()}, ${nice(S.time)} Uhr`],
-        ["Status", "Wartet auf Bestätigung"]
+        ["Leistung", chosen().map(({ item }) => esc(item.name)).join(" + ")],
+        ["Adresse", "Rannische Str. 6, Halle"]
       ].map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join("");
       go(5, 1);
     };
@@ -561,9 +560,9 @@
         `UID:${S.ref}@vietnamnail.de`,
         `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z`,
         `DTSTART:${f(start)}`, `DTEND:${f(end)}`,
-        `SUMMARY:Vietnam Nails – ${chosen().map(({ item }) => item.name).join(" + ")} (angefragt)`,
+        `SUMMARY:Vietnam Nails – ${chosen().map(({ item }) => item.name).join(" + ")} `,
         `LOCATION:${CONFIG.address.replace(/,/g, "\\,")}`,
-        `DESCRIPTION:Anfrage ${S.ref} – noch nicht bestätigt. Tel. ${CONFIG.phone}`,
+        `DESCRIPTION:Wir freuen uns auf Sie! Termin ändern oder absagen: Tel. ${CONFIG.phone}`,
         "END:VEVENT", "END:VCALENDAR"
       ].join("\r\n");
       const a = document.createElement("a");

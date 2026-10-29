@@ -10,7 +10,7 @@
   const DAY_S = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
   const MONTH = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
   const MONTH_S = ["Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sep.", "Okt.", "Nov.", "Dez."];
-  const STATUS = { pending: "Anfrage", confirmed: "Bestätigt", done: "Erledigt", cancelled: "Storniert", noshow: "Nicht erschienen" };
+  const STATUS = { pending: "Gebucht", confirmed: "Gebucht", done: "Erledigt", cancelled: "Storniert", noshow: "Nicht erschienen" };
   const SOURCE = { online: "Website", telefon: "Telefon", vorort: "Vor Ort", whatsapp: "WhatsApp", instagram: "Instagram" };
 
   const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -67,9 +67,9 @@
   const waText = (b, kind) => {
     const when = `${longDate(parse(b.date))} um ${nice(b.time)} Uhr`;
     if (kind === "decline") {
-      return `Hallo ${firstName(b.name)}, vielen Dank für Ihre Anfrage bei Vietnam Nails. Leider ist ${when} schon vergeben. Dürfen wir Ihnen einen anderen Termin vorschlagen?`;
+      return `Hallo ${firstName(b.name)}, leider müssen wir Ihren Termin bei Vietnam Nails am ${when} absagen. Dürfen wir Ihnen einen anderen Termin vorschlagen?`;
     }
-    return `Hallo ${firstName(b.name)}, Ihr Termin bei Vietnam Nails ist bestätigt:\n\n${b.title}\n${when}\n\nRannische Str. 6, 06108 Halle (Saale)\nWir freuen uns auf Sie!`;
+    return `Hallo ${firstName(b.name)}, wir freuen uns auf Ihren Termin bei Vietnam Nails:\n\n${b.title}\n${when}\n\nRannische Str. 6, 06108 Halle (Saale)`;
   };
   const waLink = (b, kind) => b.phone ? `https://wa.me/${waNumber(b.phone)}?text=${encodeURIComponent(waText(b, kind))}` : null;
 
@@ -125,11 +125,6 @@
   window.addEventListener("hashchange", () => { if (!appEl.hidden) route(); });
 
   $$("[data-go]").forEach(b => b.addEventListener("click", () => { location.hash = b.dataset.go; }));
-  $$("[data-filter-pending]").forEach(b => b.addEventListener("click", () => {
-    listState.status = "pending";
-    syncListFilters();
-    if (location.hash === "#termine") loadList();
-  }));
 
   /* ---------------- Übersicht ---------------- */
   async function loadOverview() {
@@ -138,13 +133,12 @@
     $("[data-today-label]").textContent = longDate(today());
     try {
       const [stats, pend, todayB] = await Promise.all([
-        api("stats"), api("pending"), api("bookings", { from: ymd(today()), to: ymd(today()) })
+        api("stats"), api("recent"), api("bookings", { from: ymd(today()), to: ymd(today()) })
       ]);
-      ["pending", "today", "week", "visitorsToday", "visitors7", "visitors30", "online30"].forEach(k => {
+      ["online7", "today", "week", "visitorsToday", "visitors7", "visitors30", "online30"].forEach(k => {
         $$(`[data-stat="${k}"]`).forEach(el => { el.textContent = stats[k]; });
       });
-      setBadge(stats.pending);
-      renderPending(pend.bookings);
+      renderRecent(pend.bookings);
       renderToday(todayB.bookings);
       lastStats = stats;
       drawChart(stats.series);
@@ -152,28 +146,33 @@
     } catch (e) { if (e.message !== "auth") toast(e.message); }
   }
 
+  // „Neu“-Markierung: online gebuchte Termine seit dem letzten Öffnen der Übersicht
+  const SEEN_KEY = "vn_admin_seen";
+  const lastSeen = () => { try { return localStorage.getItem(SEEN_KEY) || ""; } catch (_) { return ""; } };
+  const markSeen = () => { try { localStorage.setItem(SEEN_KEY, new Date().toISOString()); } catch (_) {} };
+  const unseen = list => { const t = lastSeen(); return list.filter(b => !t || new Date(b.created_at) > new Date(t)); };
+
   function setBadge(n) {
     $$("[data-badge]").forEach(b => { b.hidden = !n; b.textContent = n; });
     document.title = `${n ? `(${n}) ` : ""}Admin · Vietnam Nails`;
   }
+  const checkNew = () => api("recent").then(r => { cache(r.bookings); setBadge(unseen(r.bookings).length); }).catch(() => {});
 
-  function renderPending(list) {
-    const el = $("[data-pending-list]");
-    if (!list.length) { el.innerHTML = `<p class="empty">Keine offenen Anfragen.</p>`; return; }
-    el.innerHTML = list.map(b => `
-      <div class="req" data-id="${b.id}">
-        <div class="req-main" data-open="${b.id}">
-          <p class="req-name">${esc(b.name)}</p>
-          <p class="req-meta">${esc(b.title)}${b.price ? ` · ${esc(b.price)}` : ""}</p>
-        </div>
-        <p class="req-when">${relDay(b.date) || `${DAY_S[parse(b.date).getDay()]}, ${parse(b.date).getDate()}. ${MONTH_S[parse(b.date).getMonth()]}`} · ${nice(b.time)}</p>
-        <div class="req-actions">
-          <button class="btn btn-dark" data-quick="confirm" data-id="${b.id}">Bestätigen</button>
-          ${b.phone ? `<a class="btn btn-line" href="${waLink(b, "confirm")}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
-          <button class="btn btn-line" data-quick="decline" data-id="${b.id}">Absagen</button>
-        </div>
-      </div>`).join("");
+  function renderRecent(list) {
+    const el = $("[data-recent-list]");
+    const fresh = new Set(unseen(list).map(b => b.id));
+    if (!list.length) { el.innerHTML = `<p class="empty">Noch keine Online-Buchungen.</p>`; setBadge(0); return; }
+    el.innerHTML = list.map(b => {
+      const d = parse(b.date);
+      return `<button class="drow" data-open="${b.id}">
+        <span class="drow-time">${nice(b.time)}<small>${relDay(b.date) || `${DAY_S[d.getDay()]}, ${d.getDate()}. ${MONTH_S[d.getMonth()]}`}</small></span>
+        <span><span class="drow-name">${esc(b.name)}</span><span class="drow-meta">${esc(b.title)}</span></span>
+        ${fresh.has(b.id) ? `<span class="pill pill-new">Neu</span>` : `<span></span>`}
+      </button>`;
+    }).join("");
     cache(list);
+    setBadge(0);
+    markSeen();
   }
 
   function renderToday(list) {
@@ -189,24 +188,6 @@
       </button>`).join("");
     cache(list);
   }
-
-  // Schnellaktionen
-  document.addEventListener("click", async e => {
-    const q = e.target.closest("[data-quick]");
-    if (!q) return;
-    const b = byId[q.dataset.id];
-    if (!b) return;
-    if (q.dataset.quick === "confirm") {
-      await setStatus(b, "confirmed");
-      const link = waLink(b, "confirm");
-      if (link && confirm(`Termin bestätigt.\n\n${b.name} jetzt per WhatsApp benachrichtigen?`)) window.open(link, "_blank", "noopener");
-    } else {
-      if (!confirm(`Anfrage von ${b.name} absagen?`)) return;
-      await setStatus(b, "cancelled");
-      const link = waLink(b, "decline");
-      if (link && confirm("Kundin per WhatsApp informieren?")) window.open(link, "_blank", "noopener");
-    }
-  });
 
   /* Diagramm: Besucher je Tag (eine Reihe, Balken) */
   let lastStats = null;
@@ -291,7 +272,7 @@
     if (view === "uebersicht") loadOverview();
     if (view === "kalender") loadCal();
     if (view === "termine") loadList();
-    if (view !== "uebersicht") api("stats").then(s => setBadge(s.pending)).catch(() => {});
+    if (view !== "uebersicht") checkNew();
   }
 
   /* ---------------- Kalender ---------------- */
@@ -519,7 +500,7 @@
     const call = $("[data-dr-call]"), wa = $("[data-dr-wa]");
     call.href = b.phone ? `tel:${b.phone.replace(/[^\d+]/g, "")}` : "#";
     call.setAttribute("aria-disabled", String(!b.phone));
-    wa.href = waLink(b, b.status === "cancelled" ? "decline" : "confirm") || "#";
+    wa.href = waLink(b, b.status === "cancelled" ? "decline" : "reminder") || "#";
     wa.setAttribute("aria-disabled", String(!b.phone));
     const ex = (b.extras || []).map(id => extras[id]?.name).filter(Boolean);
     const rows = [
@@ -533,7 +514,8 @@
       ["Eingegangen", new Date(b.created_at).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })]
     ].filter(Boolean);
     $("[data-dr-kv]").innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
-    $$("[data-set]", drawer).forEach(x => { x.hidden = x.dataset.set === b.status; });
+    const active = b.status === "confirmed" || b.status === "pending";
+    $$("[data-set]", drawer).forEach(x => { x.hidden = x.dataset.set === b.status || (x.dataset.set === "confirmed" && active); });
     scrim.hidden = false; drawer.hidden = false;
     document.body.classList.add("is-locked");
     requestAnimationFrame(() => { scrim.classList.add("is-on"); drawer.classList.add("is-on"); });
@@ -551,9 +533,6 @@
     const s = e.target.closest("[data-set]"); if (!s || !current) return;
     await setStatus(current, s.dataset.set);
     openDrawer(current);
-    if (s.dataset.set === "confirmed" && current.phone && confirm(`${current.name} jetzt per WhatsApp benachrichtigen?`)) {
-      window.open(waLink(current, "confirm"), "_blank", "noopener");
-    }
   });
   $("[data-dr-edit]").addEventListener("click", () => { const b = current; closeDrawer(); openForm(b); });
   $("[data-dr-delete]").addEventListener("click", async () => {
@@ -612,7 +591,7 @@
     fm.services = new Set(b ? b.services : []);
     fm.extras = new Set(b ? b.extras : []);
     fm.source = b ? b.source : "telefon";
-    fm.status = b ? b.status : "confirmed";
+    fm.status = b && b.status !== "pending" ? b.status : "confirmed";
     fm.durTouched = !!b;
     $("[data-fm-title]").textContent = b ? "Termin bearbeiten" : "Neuer Termin";
     form.name.value = b ? b.name : "";
@@ -732,7 +711,7 @@
     poll = setInterval(() => {
       if (document.hidden || !modal.hidden) return;
       if (view === "uebersicht") loadOverview();
-      else api("stats").then(s => setBadge(s.pending)).catch(() => {});
+      else checkNew();
       if (view === "kalender") loadCal();
     }, 60000);
   }

@@ -87,8 +87,8 @@ code { font-size: .85em; background: var(--paper); padding: 1px 5px; border: 1px
 
 /* Status pills */
 .pill { display: inline-flex; align-items: center; gap: 6px; font-size: .64rem; letter-spacing: .16em; text-transform: uppercase; padding: 4px 9px 3px; border: 1px solid var(--black); white-space: nowrap; }
-.pill-pending { border-style: dashed; }
-.pill-confirmed { background: var(--black); color: var(--white); }
+.pill-confirmed, .pill-pending { background: var(--black); color: var(--white); }
+.pill-new { border-color: var(--black); }
 .pill-done { background: var(--line); border-color: var(--line); color: var(--ink); }
 .pill-cancelled, .pill-noshow { border-color: var(--line-2); color: var(--mute); text-decoration: line-through; }
 
@@ -213,9 +213,7 @@ button.tile:hover { border-color: var(--black); }
 .ev small { display: block; font-size: .7rem; opacity: .7; font-variant-numeric: tabular-nums; }
 .ev b { display: block; font-weight: 500; font-size: .84rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ev span { display: block; color: inherit; opacity: .75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ev-confirmed { background: var(--black); color: var(--white); }
-.ev-pending { border-style: dashed; border-left-style: solid; background: #fff; }
-.ev-pending::after { content: "Anfrage"; position: absolute; right: 5px; top: 5px; font-size: .56rem; letter-spacing: .14em; text-transform: uppercase; background: var(--white); border: 1px solid var(--black); padding: 0 4px; }
+.ev-confirmed, .ev-pending { background: var(--black); color: var(--white); }
 .ev-done { background: var(--line); border-color: var(--line-2); color: var(--ink); }
 .ev-cancelled, .ev-noshow { background: #fafaf9; border-color: var(--line-2); color: var(--mute); text-decoration: line-through; }
 .ev.is-short small, .ev.is-short span { display: none; }
@@ -223,7 +221,6 @@ button.tile:hover { border-color: var(--black); }
 .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 14px 2px 0; font-size: .82rem; color: var(--ink); }
 .legend span { display: inline-flex; align-items: center; gap: 8px; }
 .lg { width: 16px; height: 12px; border: 1px solid var(--black); }
-.lg-pending { border-style: dashed; }
 .lg-confirmed { background: var(--black); }
 .lg-done { background: var(--line); border-color: var(--line-2); }
 .lg-cancelled { background: #fafaf9; border-color: var(--line-2); }

@@ -1,5 +1,5 @@
 <?php
-/** POST JSON → neue Online-Terminanfrage */
+/** POST JSON → neue Online-Buchung (sofort fest gebucht) */
 declare(strict_types=1);
 require __DIR__ . '/_lib.php';
 
@@ -35,7 +35,7 @@ if (!in_array($time, vn_free_slots($date, max(30, $svc['duration'])), true)) {
 $ref = vn_ref();
 $now = date('c');
 $db->prepare('INSERT INTO bookings(ref, status, source, name, phone, services, extras, title, date, time, duration, price, note, visit, created_at, updated_at)
-              VALUES(?, \'pending\', \'online\', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+              VALUES(?, \'confirmed\', \'online\', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
    ->execute([$ref, $name, $phone, json_encode($svc['ids']), json_encode($svc['extras']), $svc['title'], $date, $time,
               max(30, $svc['duration']), $svc['price'], $note, $visit, $now, $now]);
 $db->commit();
@@ -43,12 +43,12 @@ $db->commit();
 // Optional: E-Mail an das Studio
 $to = $GLOBALS['VN_CONFIG']['notify_email'] ?? '';
 if ($to) {
-  $body = "Neue Online-Terminanfrage $ref\n\n"
+  $body = "Neue Online-Buchung $ref\n\n"
         . "Leistung: {$svc['title']}\n"
         . "Termin: " . (new DateTime($date))->format('d.m.Y') . ", $time Uhr\n"
         . "Name: $name\nTelefon: $phone\n" . ($note ? "Wunsch: $note\n" : '')
-        . "\nBitte im Admin-Bereich bestätigen.";
-  @mail($to, "Neue Terminanfrage $ref", $body, 'From: ' . $GLOBALS['VN_CONFIG']['mail_from'] . "\r\nContent-Type: text/plain; charset=utf-8");
+        . "\nDer Termin steht im Admin-Kalender.";
+  @mail($to, "Neuer Termin $ref", $body, 'From: ' . $GLOBALS['VN_CONFIG']['mail_from'] . "\r\nContent-Type: text/plain; charset=utf-8");
 }
 
 vn_json(['ok' => true, 'ref' => $ref]);

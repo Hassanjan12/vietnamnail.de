@@ -46,9 +46,9 @@
       <small>Admin</small>
     </div>
     <nav class="side-nav" aria-label="Admin-Navigation">
-      <a href="#uebersicht" data-nav="uebersicht"><i class="ic ic-home"></i><span>Übersicht</span></a>
+      <a href="#uebersicht" data-nav="uebersicht"><i class="ic ic-home"></i><span>Übersicht</span><b class="badge" data-badge hidden></b></a>
       <a href="#kalender" data-nav="kalender"><i class="ic ic-cal"></i><span>Kalender</span></a>
-      <a href="#termine" data-nav="termine"><i class="ic ic-list"></i><span>Termine</span><b class="badge" data-badge hidden></b></a>
+      <a href="#termine" data-nav="termine"><i class="ic ic-list"></i><span>Termine</span></a>
       <a href="#einstellungen" data-nav="einstellungen"><i class="ic ic-gear"></i><span>Einstellungen</span></a>
     </nav>
     <button class="btn btn-light side-new" data-new><span class="plus"></span>Neuer Termin</button>
@@ -70,10 +70,10 @@
       </header>
 
       <div class="tiles">
-        <button class="tile tile-dark" data-go="termine" data-filter-pending>
-          <span class="tile-k">Neue Anfragen</span>
-          <b class="tile-v" data-stat="pending">–</b>
-          <span class="tile-s">warten auf Bestätigung</span>
+        <button class="tile tile-dark" data-go="termine">
+          <span class="tile-k">Online gebucht</span>
+          <b class="tile-v" data-stat="online7">–</b>
+          <span class="tile-s">in den letzten 7 Tagen</span>
         </button>
         <button class="tile" data-go="kalender">
           <span class="tile-k">Termine heute</span>
@@ -88,14 +88,14 @@
         <div class="tile">
           <span class="tile-k">Besucher · 30 Tage</span>
           <b class="tile-v" data-stat="visitors30">–</b>
-          <span class="tile-s"><span data-stat="online30">–</span> Online-Anfragen</span>
+          <span class="tile-s"><span data-stat="online30">–</span> Online-Buchungen</span>
         </div>
       </div>
 
       <div class="ov-grid">
         <div class="card">
-          <div class="card-h"><h2>Neue Anfragen</h2><a href="#termine" data-filter-pending class="link">Alle</a></div>
-          <div data-pending-list class="req-list"></div>
+          <div class="card-h"><h2>Neu online gebucht</h2><a href="#termine" class="link">Alle</a></div>
+          <div data-recent-list class="day-list"></div>
         </div>
         <div class="card">
           <div class="card-h"><h2>Heute</h2><a href="#kalender" class="link">Kalender</a></div>
@@ -143,8 +143,7 @@
         <div class="cal" data-cal></div>
       </div>
       <div class="legend">
-        <span><i class="lg lg-pending"></i>Anfrage</span>
-        <span><i class="lg lg-confirmed"></i>Bestätigt</span>
+        <span><i class="lg lg-confirmed"></i>Gebucht</span>
         <span><i class="lg lg-done"></i>Erledigt</span>
         <span><i class="lg lg-cancelled"></i>Storniert / nicht erschienen</span>
         <span class="muted">Tipp: In eine freie Stelle klicken, um dort einen Termin einzutragen.</span>
@@ -163,12 +162,11 @@
       <div class="list-tools">
         <label class="search">
           <i class="ic ic-search"></i>
-          <input type="search" placeholder="Name, Telefon oder Anfrage-Nr. suchen" data-search>
+          <input type="search" placeholder="Name, Telefon oder Buchungs-Nr. suchen" data-search>
         </label>
         <div class="chips" data-status-filter>
           <button data-s="" class="is-on">Alle</button>
-          <button data-s="pending">Anfragen</button>
-          <button data-s="confirmed">Bestätigt</button>
+          <button data-s="confirmed">Gebucht</button>
           <button data-s="done">Erledigt</button>
           <button data-s="cancelled">Storniert</button>
         </div>
@@ -204,10 +202,10 @@
 
   <!-- Mobile Tabbar -->
   <nav class="tabbar" aria-label="Admin-Navigation mobil">
-    <a href="#uebersicht" data-nav="uebersicht"><i class="ic ic-home"></i><span>Übersicht</span></a>
+    <a href="#uebersicht" data-nav="uebersicht"><i class="ic ic-home"></i><span>Übersicht</span><b class="badge" data-badge hidden></b></a>
     <a href="#kalender" data-nav="kalender"><i class="ic ic-cal"></i><span>Kalender</span></a>
     <button class="tab-new" data-new aria-label="Neuer Termin"><span class="plus"></span></button>
-    <a href="#termine" data-nav="termine"><i class="ic ic-list"></i><span>Termine</span><b class="badge" data-badge hidden></b></a>
+    <a href="#termine" data-nav="termine"><i class="ic ic-list"></i><span>Termine</span></a>
     <a href="#einstellungen" data-nav="einstellungen"><i class="ic ic-gear"></i><span>Mehr</span></a>
   </nav>
 </div>
@@ -231,11 +229,10 @@
     <div class="dr-status">
       <p class="eyebrow">Status ändern</p>
       <div class="chips chips-status" data-dr-statusbtns>
-        <button data-set="confirmed">Bestätigen</button>
         <button data-set="done">Erledigt</button>
         <button data-set="noshow">Nicht erschienen</button>
         <button data-set="cancelled">Stornieren</button>
-        <button data-set="pending">Anfrage</button>
+        <button data-set="confirmed">Wieder aktiv</button>
       </div>
     </div>
   </div>
@@ -289,8 +286,7 @@
         <div class="f-block">
           <p class="f-label">Status</p>
           <div class="chips chips-radio" data-fm-status>
-            <button type="button" data-v="confirmed">Bestätigt</button>
-            <button type="button" data-v="pending">Anfrage</button>
+            <button type="button" data-v="confirmed">Gebucht</button>
             <button type="button" data-v="done">Erledigt</button>
           </div>
         </div>
