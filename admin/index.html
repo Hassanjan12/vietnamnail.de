@@ -7,10 +7,11 @@
   <meta name="theme-color" content="#0a0a0a">
   <title>Admin · Vietnam Nails</title>
   <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="admin.css">
+  <link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+  <link rel="preload" href="../assets/fonts/bodoni-moda-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../assets/fonts/jost-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../assets/css/fonts.css?v=20261030">
+  <link rel="stylesheet" href="admin.css?v=20261030">
 </head>
 <body>
 
@@ -191,6 +192,17 @@
           <p class="form-err" data-pw-err></p>
           <button class="btn btn-dark" type="submit">Speichern</button>
         </form>
+        <div class="card card-wide-s">
+          <h2>Geschlossene Tage</h2>
+          <p class="muted small">Urlaub, Feiertage oder Fortbildung: An diesen Tagen kann niemand online buchen. Im Kalender sind sie schraffiert.</p>
+          <form class="closed-form" data-closed-form>
+            <label class="field"><span>Von</span><input type="date" name="from" required></label>
+            <label class="field"><span>Bis (optional)</span><input type="date" name="to"></label>
+            <button class="btn btn-dark" type="submit">Eintragen</button>
+          </form>
+          <p class="form-err" data-closed-err></p>
+          <div class="chips closed-list" data-closed-list></div>
+        </div>
         <div class="card">
           <h2>Studio-Daten</h2>
           <dl class="kv" data-salon-info></dl>
@@ -304,6 +316,6 @@
 
 <div class="toast" data-toast role="status" aria-live="polite"></div>
 
-<script src="admin.js" defer></script>
+<script src="admin.js?v=20261030" defer></script>
 </body>
 </html>

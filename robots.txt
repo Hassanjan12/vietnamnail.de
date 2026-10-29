@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /api/
+Disallow: /data/
+
+Sitemap: https://vietnamnail.de/sitemap.xml

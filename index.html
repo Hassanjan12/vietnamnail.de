@@ -6,17 +6,26 @@
   <title>Vietnam Nails · Nagelstudio Halle (Saale)</title>
   <meta name="description" content="Nageldesign, Pediküre und Wimpern in der Innenstadt von Halle (Saale). Rannische Str. 6. Termin bequem online buchen.">
   <meta name="theme-color" content="#0a0a0a">
+  <link rel="canonical" href="https://vietnamnail.de/">
   <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/img/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+  <link rel="manifest" href="site.webmanifest">
 
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Vietnam Nails · Halle (Saale)">
+  <meta property="og:locale" content="de_DE">
+  <meta property="og:site_name" content="Vietnam Nails">
+  <meta property="og:url" content="https://vietnamnail.de/">
+  <meta property="og:title" content="Vietnam Nails · Nagelstudio in Halle (Saale)">
   <meta property="og:description" content="Nageldesign, Pediküre & Wimpern in der Innenstadt von Halle. Termin online buchen.">
-  <meta property="og:image" content="assets/img/gallery/rosa-marmor-gold.webp">
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400;1,6..96,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/style.css">
+  <meta property="og:image" content="https://vietnamnail.de/assets/img/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preload" href="assets/fonts/bodoni-moda-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/jost-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/fonts.css?v=20261030">
+  <link rel="stylesheet" href="assets/css/style.css?v=20261030">
   <script>document.documentElement.classList.add("js")</script>
 
   <script type="application/ld+json">
@@ -24,7 +33,10 @@
     "@context": "https://schema.org",
     "@type": "NailSalon",
     "name": "Vietnam Nails",
-    "image": "assets/img/gallery/rosa-marmor-gold.webp",
+    "image": "https://vietnamnail.de/assets/img/og-image.jpg",
+    "url": "https://vietnamnail.de/",
+    "hasMap": "https://maps.app.goo.gl/wQZEiNsJ5wFjue3s9",
+    "areaServed": "Halle (Saale)",
     "telephone": "+49 345 68673949",
     "address": { "@type": "PostalAddress", "streetAddress": "Rannische Str. 6", "postalCode": "06108", "addressLocality": "Halle (Saale)", "addressCountry": "DE" },
     "openingHoursSpecification": [
@@ -79,7 +91,7 @@
   <!-- ============ HERO ============ -->
   <section class="hero" id="top" data-theme="dark">
     <div class="hero-img">
-      <img src="assets/img/gallery/stiletto-blau-rosen.webp" alt="" width="1400" height="1572" fetchpriority="high">
+      <img src="assets/img/gallery/stiletto-blau-rosen.webp" srcset="assets/img/gallery/stiletto-blau-rosen-sm.webp 700w, assets/img/gallery/stiletto-blau-rosen.webp 1400w" sizes="(max-width: 900px) 100vw, 47vw" alt="" width="1400" height="1572" fetchpriority="high">
     </div>
     <div class="hero-side">
       <img src="assets/img/gallery/perlmutt-chrome-sm.webp" alt="" width="700" height="761">
@@ -214,7 +226,7 @@
       </div>
 
       <div class="menu-cta reveal">
-        <p>Gutscheine sind im Studio erhältlich.</p>
+        <p>Gutscheine sind im Studio erhältlich.<small>Alle Preise sind Endpreise in Euro.</small></p>
         <button class="btn-solid" data-book>Termin buchen <i class="arr" aria-hidden="true"></i></button>
       </div>
     </div>
@@ -245,7 +257,7 @@
   <section class="sec" id="studio" data-theme="light">
     <div class="wrap studio">
       <figure class="studio-img reveal-img">
-        <img src="assets/img/gallery/rosa-marmor-gold.webp" alt="Rosa Nägel mit Marmor und Blattgold" loading="lazy" width="1200" height="1600">
+        <img src="assets/img/gallery/rosa-marmor-gold.webp" srcset="assets/img/gallery/rosa-marmor-gold-sm.webp 700w, assets/img/gallery/rosa-marmor-gold.webp 1200w" sizes="(max-width: 900px) 100vw, 45vw" alt="Rosa Nägel mit Marmor und Blattgold" loading="lazy" width="1200" height="1600">
       </figure>
       <div class="studio-copy">
         <p class="label reveal">— Ihr Besuch</p>
@@ -263,7 +275,7 @@
 
   <!-- ============ BOOKING CTA ============ -->
   <section class="cta" id="termin" data-theme="dark">
-    <div class="cta-bg"><img src="assets/img/gallery/stiletto-tuerkis-gold.webp" alt="" loading="lazy" width="1080" height="1350"></div>
+    <div class="cta-bg"><img src="assets/img/gallery/stiletto-tuerkis-gold-sm.webp" alt="" loading="lazy" width="700" height="875"></div>
     <div class="wrap cta-inner">
       <p class="label reveal">— Online buchen</p>
       <h2 class="cta-title reveal">Ihr <em>Termin.</em></h2>
@@ -406,7 +418,7 @@
           <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
           <label class="bk-consent">
             <input type="checkbox" name="consent" required>
-            <span>Ich bin einverstanden, dass meine Angaben für die Terminvergabe gespeichert werden (<a href="datenschutz.html" target="_blank">Datenschutz</a>).</span>
+            <span>Ich habe die <a href="datenschutz.html" target="_blank" rel="noopener">Datenschutzhinweise</a> gelesen. Meine Angaben werden nur für die Terminvergabe verwendet.</span>
           </label>
         </form>
       </section>
@@ -453,6 +465,6 @@
   </div>
 </div>
 
-<script src="assets/js/main.js" defer></script>
+<script src="assets/js/main.js?v=20261030" defer></script>
 </body>
 </html>

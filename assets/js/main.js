@@ -300,9 +300,11 @@
     });
 
     /* Schritt 2 */
-    const isClosed = d => !CONFIG.hours[d.getDay()] || CONFIG.closedDates.includes(ymd(d));
+
     // Freie Zeiten vom Server (berücksichtigt bereits gebuchte Termine); lokal berechnet, solange sie laden
     const avail = {};
+    const closedExtra = new Set(); // im Admin eingetragene Urlaubs-/Feiertage
+    const isClosed = d => !CONFIG.hours[d.getDay()] || CONFIG.closedDates.includes(ymd(d)) || closedExtra.has(ymd(d));
     const availKey = d => `${ymd(d).slice(0, 7)}|${Math.max(duration(), 30)}`;
     const ensureAvail = d => {
       const k = availKey(d);
@@ -310,7 +312,7 @@
       avail[k] = "loading";
       fetch(`api/slots.php?month=${ymd(d).slice(0, 7)}&dur=${Math.max(duration(), 30)}`, { cache: "no-store" })
         .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-        .then(j => { avail[k] = j.days; if (S.step === 2) { renderCal(); renderSlots(); } })
+        .then(j => { avail[k] = j.days; (j.closed || []).forEach(x => closedExtra.add(x)); if (S.step === 2) { renderCal(); renderSlots(); } })
         .catch(() => { avail[k] = "offline"; });
     };
     const slotsFor = d => {
@@ -429,7 +431,7 @@
         $(".bk-consent", f).classList.toggle("is-invalid", !consentOk);
         if (!nameOk) return "Bitte geben Sie Ihren Namen an.";
         if (!phoneOk) return "Bitte geben Sie eine gültige Telefonnummer an.";
-        if (!consentOk) return "Bitte bestätigen Sie die Datenschutzhinweise.";
+        if (!consentOk) return "Bitte bestätigen Sie, dass Sie die Datenschutzhinweise gelesen haben.";
       }
       return null;
     };

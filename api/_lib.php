@@ -76,7 +76,20 @@ function vn_db(): PDO {
     CREATE TABLE IF NOT EXISTS hits (k TEXT NOT NULL, ts INTEGER NOT NULL);
     CREATE INDEX IF NOT EXISTS idx_hits ON hits(k, ts);
   SQL);
+  vn_cleanup($db);
   return $db;
+}
+
+/** Einmal täglich: alte Termine (12 Monate) und Statistikdaten (14 Monate) löschen – siehe Datenschutzerklärung. */
+function vn_cleanup(PDO $db): void {
+  $today = date('Y-m-d');
+  $st = $db->prepare('SELECT v FROM settings WHERE k = ?');
+  $st->execute(['cleanup_day']);
+  if ($st->fetchColumn() === $today) return;
+  $db->prepare('INSERT INTO settings(k, v) VALUES(?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v')->execute(['cleanup_day', $today]);
+  $db->prepare('DELETE FROM bookings WHERE date < ?')->execute([(new DateTime('-12 months'))->format('Y-m-d')]);
+  $db->prepare('DELETE FROM pageviews WHERE day < ?')->execute([(new DateTime('-14 months'))->format('Y-m-d')]);
+  $db->prepare('DELETE FROM hits WHERE ts < ?')->execute([time() - 86400]);
 }
 
 function vn_setting(string $k, ?string $v = null): ?string {
@@ -143,11 +156,21 @@ function vn_hm(int $m): string { return sprintf('%02d:%02d', intdiv($m, 60), $m 
 function vn_valid_date(string $d): bool { $x = DateTime::createFromFormat('Y-m-d', $d); return $x && $x->format('Y-m-d') === $d; }
 function vn_valid_time(string $t): bool { return (bool) preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $t); }
 
+/** Geschlossene Tage: aus salon.json plus im Admin eingetragene Tage (Urlaub, Feiertage). */
+function vn_closed_dates(): array {
+  static $c = null;
+  if ($c === null) {
+    $extra = json_decode((string) vn_setting('closed_dates'), true) ?: [];
+    $c = array_values(array_unique(array_merge(vn_salon()['closedDates'] ?? [], $extra)));
+    sort($c);
+  }
+  return $c;
+}
+
 function vn_hours_for(string $date): ?array {
-  $s = vn_salon();
-  if (in_array($date, $s['closedDates'] ?? [], true)) return null;
+  if (in_array($date, vn_closed_dates(), true)) return null;
   $dow = (int) (new DateTime($date))->format('w');
-  return $s['hours'][(string) $dow] ?? null;
+  return vn_salon()['hours'][(string) $dow] ?? null;
 }
 
 /** Aktive Termine (Anfrage oder bestätigt) eines Tages als [start, ende] in Minuten. */

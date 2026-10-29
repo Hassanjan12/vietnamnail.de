@@ -119,7 +119,7 @@
     if (v === "uebersicht") loadOverview();
     if (v === "kalender") loadCal();
     if (v === "termine") loadList();
-    if (v === "einstellungen") renderSettings();
+    if (v === "einstellungen") { renderSettings(); loadClosed(); }
     window.scrollTo(0, 0);
   }
   window.addEventListener("hashchange", () => { if (!appEl.hidden) route(); });
@@ -579,7 +579,7 @@
     const h = SALON.hours[String(day.getDay())];
     const end = toHM(toMin(t) + Number(form.duration.value));
     let msg = `${DAY[day.getDay()]}, ${day.getDate()}. ${MONTH[day.getMonth()]} · ${nice(t)}–${nice(end)} Uhr`;
-    if (!h) { msg += " · Achtung: an diesem Tag ist eigentlich geschlossen."; hint.classList.add("is-warn"); }
+    if (!h || (SALON.closedDates || []).includes(d)) { msg += " · Achtung: an diesem Tag ist geschlossen."; hint.classList.add("is-warn"); }
     else if (toMin(t) < toMin(h[0]) || toMin(end) > toMin(h[1])) { msg += ` · Achtung: außerhalb der Öffnungszeit (${nice(h[0])}–${nice(h[1])}).`; hint.classList.add("is-warn"); }
     hint.textContent = msg;
   }
@@ -677,6 +677,53 @@
       ["Online buchbar", `${SALON.daysAhead} Tage im Voraus`]
     ].map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
   }
+  /* Geschlossene Tage (Urlaub, Feiertage) */
+  let closedOwn = [];
+  async function loadClosed() {
+    try {
+      const r = await api("closed_list");
+      closedOwn = r.editable;
+      SALON.closedDates = r.dates;
+      renderClosed();
+    } catch (_) { /* still */ }
+  }
+  function renderClosed() {
+    const el = $("[data-closed-list]");
+    const t0 = ymd(today());
+    const up = closedOwn.filter(d => d >= t0);
+    el.innerHTML = up.length ? up.map(d => { const x = parse(d); return `<button type="button" data-unclose="${d}" title="Wieder öffnen">${DAY_S[x.getDay()]}, ${x.getDate()}. ${MONTH_S[x.getMonth()]} ${x.getFullYear()}</button>`; }).join("")
+      : `<p class="empty">Keine geschlossenen Tage eingetragen.</p>`;
+  }
+  async function saveClosed(dates, msg) {
+    const err = $("[data-closed-err]");
+    err.textContent = "";
+    try {
+      const r = await api("closed_save", { dates });
+      closedOwn = r.dates;
+      await loadClosed();
+      toast(msg);
+      if (r.conflicts && r.conflicts.length) {
+        const list = r.conflicts.map(c => { const x = parse(c.date); return `${x.getDate()}.${x.getMonth() + 1}.: ${c.n} ${Number(c.n) === 1 ? "Termin" : "Termine"}`; }).join(", ");
+        alert(`Achtung: An diesen Tagen sind schon Termine gebucht:\n${list}\n\nBitte die Kundinnen informieren oder die Termine verschieben.`);
+      }
+    } catch (x) { err.textContent = x.message; }
+  }
+  $("[data-closed-form]").addEventListener("submit", e => {
+    e.preventDefault();
+    const f = e.target;
+    const from = f.from.value, to = f.to.value || f.from.value;
+    if (!from) return;
+    if (to < from) { $("[data-closed-err]").textContent = "„Bis“ liegt vor „Von“."; return; }
+    const add = [];
+    for (let d = parse(from); ymd(d) <= to && add.length < 120; d = addDays(d, 1)) add.push(ymd(d));
+    f.reset();
+    saveClosed([...new Set([...closedOwn, ...add])], add.length === 1 ? "Tag geschlossen" : `${add.length} Tage geschlossen`);
+  });
+  $("[data-closed-list]").addEventListener("click", e => {
+    const b = e.target.closest("[data-unclose]"); if (!b) return;
+    saveClosed(closedOwn.filter(d => d !== b.dataset.unclose), "Tag wieder geöffnet");
+  });
+
   $("[data-pw-form]").addEventListener("submit", async e => {
     e.preventDefault();
     const f = e.target, err = $("[data-pw-err]");
@@ -705,6 +752,7 @@
       SALON.categories.forEach(c => c.items.forEach(i => { items[i.id] = i; }));
       SALON.extras.forEach(x => { extras[x.id] = x; });
       buildFormOptions();
+      await loadClosed();
     }
     route();
     clearInterval(poll);

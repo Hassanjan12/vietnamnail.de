@@ -15,4 +15,5 @@ for ($i = 0; $i < $n; $i++) {
   $days[$key] = vn_free_slots($key, $dur);
   $d->modify('+1 day');
 }
-vn_json(['ok' => true, 'days' => $days]);
+$closed = array_values(array_filter(vn_closed_dates(), fn($x) => str_starts_with($x, $month)));
+vn_json(['ok' => true, 'days' => $days, 'closed' => $closed]);

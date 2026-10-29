@@ -196,6 +196,22 @@ switch ($action) {
     vn_json(['ok' => true, 'bookings' => array_map('vn_booking_out', $st->fetchAll())]);
   }
 
+  case 'closed_list': {
+    $own = json_decode((string) vn_setting('closed_dates'), true) ?: [];
+    vn_json(['ok' => true, 'dates' => vn_closed_dates(), 'editable' => $own]);
+  }
+
+  case 'closed_save': {
+    $dates = array_values(array_unique(array_filter((array) ($in['dates'] ?? []), fn($d) => is_string($d) && vn_valid_date($d))));
+    sort($dates);
+    // vergangene Tage nicht mehr speichern
+    $dates = array_values(array_filter($dates, fn($d) => $d >= date('Y-m-d', strtotime('-1 day'))));
+    vn_setting('closed_dates', json_encode($dates));
+    $st = $db->prepare("SELECT date, COUNT(*) AS n FROM bookings WHERE status IN ('pending','confirmed') AND date IN (" . (implode(',', array_fill(0, max(1, count($dates)), '?'))) . ") GROUP BY date");
+    $st->execute($dates ?: ['0000-00-00']);
+    vn_json(['ok' => true, 'dates' => $dates, 'conflicts' => $st->fetchAll()]);
+  }
+
   case 'password': {
     $hash = vn_setting('admin_hash');
     if (!password_verify((string) ($in['current'] ?? ''), (string) $hash)) vn_fail('Das aktuelle Passwort ist nicht korrekt.', 401);

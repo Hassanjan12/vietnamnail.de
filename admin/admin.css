@@ -7,7 +7,7 @@
   --paper: #f6f5f2;
   --line: #e4e2de;
   --line-2: #d3d0ca;
-  --mute: #77756f;
+  --mute: #6a6863;
   --mute-d: #a3a19c;
   --danger: #8b1d1d;
   --serif: "Bodoni Moda", Didot, Georgia, serif;
@@ -248,6 +248,13 @@ button.tile:hover { border-color: var(--black); }
 /* ============ EINSTELLUNGEN ============ */
 .set-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 980px; }
 .set-grid form .btn { justify-self: start; }
+.closed-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: end; }
+.closed-form .btn { grid-column: 1 / -1; justify-self: start; }
+.closed-form .btn { min-height: 46px; }
+.closed-list button { display: inline-flex; align-items: center; gap: 10px; }
+.closed-list button::after { content: "×"; font-size: 1.1rem; line-height: 1; color: var(--mute); }
+.closed-list button:hover::after { color: var(--danger); }
+.closed-list .empty { padding: 6px 0; text-align: left; font-size: 1rem; }
 .kv { display: grid; grid-template-columns: auto 1fr; gap: 8px 18px; margin: 0; font-size: .95rem; }
 .kv dt { color: var(--mute); font-size: .78rem; letter-spacing: .06em; padding-top: 2px; }
 .kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
