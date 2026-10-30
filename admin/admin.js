@@ -47,12 +47,12 @@
     return json;
   }
 
-  const toast = (msg) => {
+  const toast = (msg, ms = 2600) => {
     const t = $("[data-toast]");
     t.textContent = msg;
     t.classList.add("is-on");
     clearTimeout(toast.t);
-    toast.t = setTimeout(() => t.classList.remove("is-on"), 2600);
+    toast.t = setTimeout(() => t.classList.remove("is-on"), ms);
   };
 
   /* ---------------- Telefon & WhatsApp ---------------- */
@@ -156,7 +156,41 @@
     $$("[data-badge]").forEach(b => { b.hidden = !n; b.textContent = n; });
     document.title = `${n ? `(${n}) ` : ""}Admin · Vietnam Nails`;
   }
-  const checkNew = () => api("recent").then(r => { cache(r.bookings); setBadge(unseen(r.bookings).length); }).catch(() => {});
+  // Neue Online-Buchungen sofort melden (Hinweis + kurzer Ton), auch wenn eine andere Ansicht offen ist
+  let knownIds = null;
+  let audio = null;
+  const chime = () => {
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === "suspended") audio.resume();
+      [[880, 0], [1320, .16]].forEach(([f, t]) => {
+        const o = audio.createOscillator(), g = audio.createGain();
+        o.frequency.value = f; o.type = "sine";
+        g.gain.setValueAtTime(0, audio.currentTime + t);
+        g.gain.linearRampToValueAtTime(.18, audio.currentTime + t + .02);
+        g.gain.exponentialRampToValueAtTime(.0001, audio.currentTime + t + .6);
+        o.connect(g).connect(audio.destination);
+        o.start(audio.currentTime + t); o.stop(audio.currentTime + t + .65);
+      });
+    } catch (_) { /* Ton ist optional */ }
+  };
+  const checkNew = () => api("recent").then(r => {
+    cache(r.bookings);
+    if (view !== "uebersicht") setBadge(unseen(r.bookings).length);
+    const ids = r.bookings.map(b => b.id);
+    if (knownIds) {
+      const fresh = r.bookings.filter(b => !knownIds.has(b.id));
+      if (fresh.length) {
+        const b = fresh[0], d = parse(b.date);
+        toast(`Neue Online-Buchung: ${b.name} · ${relDay(b.date) || `${DAY_S[d.getDay()]}, ${d.getDate()}.${d.getMonth() + 1}.`} ${nice(b.time)} Uhr${fresh.length > 1 ? ` (+${fresh.length - 1})` : ""}`, 9000);
+        chime();
+        if (view === "uebersicht") loadOverview();
+        if (view === "kalender") loadCal();
+      }
+    }
+    knownIds = new Set([...(knownIds || []), ...ids]);
+    return r;
+  }).catch(() => {});
 
   function renderRecent(list) {
     const el = $("[data-recent-list]");
@@ -756,12 +790,13 @@
     }
     route();
     clearInterval(poll);
+    await checkNew();
     poll = setInterval(() => {
-      if (document.hidden || !modal.hidden) return;
+      checkNew(); // auch im Hintergrund, damit neue Buchungen gemeldet werden
+      if (document.hidden || !modal.hidden || !drawer.hidden) return;
       if (view === "uebersicht") loadOverview();
-      else checkNew();
       if (view === "kalender") loadCal();
-    }, 60000);
+    }, 45000);
   }
 
   (async () => {

@@ -9,6 +9,15 @@ if (basename($_SERVER['SCRIPT_FILENAME'] ?? '') === '_lib.php') { http_response_
 
 date_default_timezone_set('Europe/Berlin');
 
+// Fehler nie im Browser anzeigen (keine Serverpfade preisgeben), sondern als JSON melden und protokollieren
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+set_exception_handler(function (Throwable $e): void {
+  error_log('Vietnam Nails API: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+  if (!headers_sent()) { http_response_code(500); header('Content-Type: application/json; charset=utf-8'); }
+  echo json_encode(['ok' => false, 'error' => 'Technischer Fehler. Bitte versuchen Sie es später erneut oder rufen Sie uns an: 0345 686 739 49']);
+});
+
 const VN_ROOT = __DIR__ . '/..';
 const VN_DATA = VN_ROOT . '/data';
 
@@ -39,8 +48,12 @@ function vn_db(): PDO {
   $db = new PDO('sqlite:' . VN_DATA . '/vietnamnails.sqlite', null, null, [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_TIMEOUT => 8,
   ]);
-  $db->exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 4000;');
+  // Wartezeit zuerst setzen, damit gleichzeitige Zugriffe warten statt abzubrechen
+  $db->exec('PRAGMA busy_timeout = 8000');
+  $db->exec('PRAGMA journal_mode = WAL');
+  $db->exec('PRAGMA foreign_keys = ON');
   $db->exec(<<<SQL
     CREATE TABLE IF NOT EXISTS bookings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,7 +98,9 @@ function vn_cleanup(PDO $db): void {
   $today = date('Y-m-d');
   $st = $db->prepare('SELECT v FROM settings WHERE k = ?');
   $st->execute(['cleanup_day']);
-  if ($st->fetchColumn() === $today) return;
+  $last = $st->fetchColumn();
+  $st->closeCursor();
+  if ($last === $today) return;
   $db->prepare('INSERT INTO settings(k, v) VALUES(?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v')->execute(['cleanup_day', $today]);
   $db->prepare('DELETE FROM bookings WHERE date < ?')->execute([(new DateTime('-12 months'))->format('Y-m-d')]);
   $db->prepare('DELETE FROM pageviews WHERE day < ?')->execute([(new DateTime('-14 months'))->format('Y-m-d')]);
@@ -101,6 +116,7 @@ function vn_setting(string $k, ?string $v = null): ?string {
   $st = $db->prepare('SELECT v FROM settings WHERE k = ?');
   $st->execute([$k]);
   $r = $st->fetchColumn();
+  $st->closeCursor();
   return $r === false ? null : (string) $r;
 }
 
@@ -145,7 +161,9 @@ function vn_rate_limit(string $bucket, int $max, int $window): void {
   $db->prepare('DELETE FROM hits WHERE ts < ?')->execute([$now - 86400]);
   $st = $db->prepare('SELECT COUNT(*) FROM hits WHERE k = ? AND ts > ?');
   $st->execute([$k, $now - $window]);
-  if ((int) $st->fetchColumn() >= $max) vn_fail('Zu viele Versuche. Bitte später erneut versuchen.', 429);
+  $n = (int) $st->fetchColumn();
+  $st->closeCursor(); // Lesezugriff beenden, bevor geschrieben wird
+  if ($n >= $max) vn_fail('Zu viele Versuche. Bitte später erneut versuchen.', 429);
   $db->prepare('INSERT INTO hits(k, ts) VALUES(?, ?)')->execute([$k, $now]);
 }
 
@@ -253,7 +271,9 @@ function vn_ref(): string {
     for ($i = 0; $i < 5; $i++) $r .= $chars[random_int(0, strlen($chars) - 1)];
     $st = vn_db()->prepare('SELECT 1 FROM bookings WHERE ref = ?');
     $st->execute([$r]);
-  } while ($st->fetchColumn());
+    $exists = $st->fetchColumn();
+    $st->closeCursor();
+  } while ($exists);
   return $r;
 }
 

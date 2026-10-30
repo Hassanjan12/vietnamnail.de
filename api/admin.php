@@ -6,8 +6,15 @@ declare(strict_types=1);
 require __DIR__ . '/_lib.php';
 
 $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+// Eigene Sitzungsdateien im gesperrten data-Ordner; angemeldet bleiben 14 Tage (Studio-Tablet/Handy)
+$sessDir = VN_DATA . '/sessions';
+if (!is_dir($sessDir)) { vn_db(); @mkdir($sessDir, 0700, true); }
+$sessLife = 14 * 86400;
+ini_set('session.gc_maxlifetime', (string) $sessLife);
+ini_set('session.use_strict_mode', '1');
+session_save_path($sessDir);
 session_name('vn_admin');
-session_set_cookie_params(['lifetime' => 0, 'path' => '/', 'httponly' => true, 'secure' => $https, 'samesite' => 'Strict']);
+session_set_cookie_params(['lifetime' => $sessLife, 'path' => '/', 'httponly' => true, 'secure' => $https, 'samesite' => 'Strict']);
 session_start();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_SERVER['HTTP_X_VN'] ?? '') !== '1') vn_fail('Ungültige Anfrage.', 400);
@@ -90,6 +97,7 @@ switch ($action) {
       $st = $db->prepare('SELECT * FROM bookings WHERE id = ?');
       $st->execute([$id]);
       $cur = $st->fetch();
+      $st->closeCursor();
       if (!$cur) vn_fail('Termin nicht gefunden.', 404);
     }
     $get = fn($k, $d = '') => array_key_exists($k, $b) ? $b[$k] : ($cur[$k] ?? $d);
