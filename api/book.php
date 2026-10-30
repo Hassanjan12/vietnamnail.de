@@ -9,7 +9,7 @@ $in = vn_input();
 // Honeypot gegen Spam-Bots
 if (!empty($in['website'])) vn_json(['ok' => true, 'ref' => 'VN-00000']);
 
-vn_rate_limit('book', 6, 3600);
+vn_rate_limit('book', 10, 3600);
 
 $name  = vn_clean((string) ($in['name'] ?? ''), 80);
 $phone = vn_clean((string) ($in['phone'] ?? ''), 40);

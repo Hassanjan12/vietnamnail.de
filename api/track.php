@@ -33,6 +33,13 @@ if (!$salt) { vn_setting('salt_day', $day); $salt = vn_setting('salt', bin2hex(r
 $hash = substr(hash('sha256', $salt . '|' . ($_SERVER['REMOTE_ADDR'] ?? '') . '|' . $ua), 0, 24);
 $device = preg_match('/Mobi|Android|iPhone|iPad/i', $ua) ? 'mobil' : 'desktop';
 
+// Schutz gegen künstliches Aufblähen der Statistik: max. 200 Aufrufe je Besucher und Tag
+$st = vn_db()->prepare('SELECT COUNT(*) FROM pageviews WHERE day = ? AND hash = ?');
+$st->execute([$day, $hash]);
+$n = (int) $st->fetchColumn();
+$st->closeCursor();
+if ($n >= 200) { http_response_code(204); exit; }
+
 vn_db()->prepare('INSERT INTO pageviews(day, hash, path, source, device, ts) VALUES(?, ?, ?, ?, ?, ?)')
   ->execute([$day, $hash, $path, $source, $device, time()]);
 http_response_code(204);

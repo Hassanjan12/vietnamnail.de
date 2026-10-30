@@ -16,7 +16,15 @@ ErrorDocument 404 /404.html
   RewriteRule ^data(/|$) - [F,L]
 </IfModule>
 
+# Interne Dateien nie ausliefern (Dokumentation, Beispiele, Datenbanken, Protokolle, versteckte Dateien)
+<FilesMatch "(^\.|\.(md|sqlite|sqlite-wal|sqlite-shm|db|log|sh|bak|sql|ini)$|^config\.sample\.php$|^composer\.)">
+  Require all denied
+</FilesMatch>
+
 <IfModule mod_headers.c>
+  # Content-Security-Policy: nur eigene Skripte/Dateien; Google nur für die Karte (nach Klick)
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-qOhFsq0QMV2REqNwk5hGH5bZE9SkX6gt6yeyKdYPv+U='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; frame-src https://www.google.com https://maps.google.com; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+  Header always set Cross-Origin-Opener-Policy "same-origin"
   Header always set X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
   Header always set X-Frame-Options "SAMEORIGIN"

@@ -19,7 +19,6 @@ set_exception_handler(function (Throwable $e): void {
 });
 
 const VN_ROOT = __DIR__ . '/..';
-const VN_DATA = VN_ROOT . '/data';
 
 $VN_CONFIG = [
   // E-Mail für Benachrichtigungen bei neuen Online-Anfragen (leer = aus)
@@ -29,6 +28,8 @@ $VN_CONFIG = [
 if (is_file(__DIR__ . '/config.php')) {
   $VN_CONFIG = array_merge($VN_CONFIG, (array) require __DIR__ . '/config.php');
 }
+// Datenordner – am sichersten außerhalb des Web-Verzeichnisses (in config.php: 'data_dir' => '/pfad/ausserhalb')
+define('VN_DATA', rtrim((string) ($VN_CONFIG['data_dir'] ?? (VN_ROOT . '/data')), '/'));
 
 function vn_salon(): array {
   static $s = null;
@@ -41,11 +42,26 @@ function vn_salon(): array {
 function vn_db(): PDO {
   static $db = null;
   if ($db) return $db;
-  if (!is_dir(VN_DATA)) mkdir(VN_DATA, 0750, true);
+  if (!is_dir(VN_DATA)) mkdir(VN_DATA, 0700, true);
+  // Schutzschicht 1: Webserver-Sperre (Apache)
   if (!is_file(VN_DATA . '/.htaccess')) {
     file_put_contents(VN_DATA . '/.htaccess', "Require all denied\n<IfModule !mod_authz_core.c>\nDeny from all\n</IfModule>\n");
   }
-  $db = new PDO('sqlite:' . VN_DATA . '/vietnamnails.sqlite', null, null, [
+  if (!is_file(VN_DATA . '/index.html')) file_put_contents(VN_DATA . '/index.html', '');
+  // Prüfdatei: Der Admin-Bereich versucht sie abzurufen und warnt, falls der Ordner öffentlich erreichbar ist
+  if (!is_file(VN_DATA . '/zugriffstest.txt')) file_put_contents(VN_DATA . '/zugriffstest.txt', 'VN-PRIVAT');
+  // Schutzschicht 2: zufälliger, nicht erratbarer Dateiname (steht in einer PHP-Datei, die der Server nie als Text ausliefert)
+  $nameFile = VN_DATA . '/dbname.php';
+  if (!is_file($nameFile) && ($fh = @fopen($nameFile, 'x'))) { // 'x': nur eine Anfrage darf den Namen anlegen
+    fwrite($fh, "<?php return '" . 'vn-' . bin2hex(random_bytes(16)) . ".sqlite';\n");
+    fclose($fh);
+  }
+  for ($i = 0; $i < 40 && (clearstatcache() || @filesize($nameFile) < 20); $i++) usleep(25000); // falls gerade geschrieben wird
+  $dbName = (string) require $nameFile;
+  if (!preg_match('/^vn-[a-f0-9]{32}\.sqlite$/', $dbName)) throw new RuntimeException('Ungültiger Datenbankname');
+  $dbPath = VN_DATA . '/' . basename($dbName);
+  $isNew = !is_file($dbPath);
+  $db = new PDO('sqlite:' . $dbPath, null, null, [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     PDO::ATTR_TIMEOUT => 8,
@@ -54,6 +70,7 @@ function vn_db(): PDO {
   $db->exec('PRAGMA busy_timeout = 8000');
   $db->exec('PRAGMA journal_mode = WAL');
   $db->exec('PRAGMA foreign_keys = ON');
+  if ($isNew) @chmod($dbPath, 0600);
   $db->exec(<<<SQL
     CREATE TABLE IF NOT EXISTS bookings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

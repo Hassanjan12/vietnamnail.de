@@ -220,6 +220,16 @@ switch ($action) {
     vn_json(['ok' => true, 'dates' => $dates, 'conflicts' => $st->fetchAll()]);
   }
 
+  case 'export': {
+    // Datensicherung: alle Termine als CSV (Excel, deutsch: Semikolon, UTF-8)
+    $rows = $db->query('SELECT ref, date, time, duration, name, phone, title, price, status, source, note, created_at FROM bookings ORDER BY date, time')->fetchAll();
+    $head = ['Nr.', 'Datum', 'Uhrzeit', 'Dauer (Min.)', 'Name', 'Telefon', 'Leistung', 'Preis', 'Status', 'Gebucht über', 'Notiz', 'Eingegangen'];
+    $esc = function ($v) { $v = (string) $v; if ($v !== '' && strpbrk($v[0], '=+-@') !== false) $v = "'" . $v; return '"' . str_replace('"', '""', $v) . '"'; };
+    $csv = "\xEF\xBB\xBF" . implode(';', array_map($esc, $head)) . "\r\n";
+    foreach ($rows as $r) $csv .= implode(';', array_map($esc, array_values($r))) . "\r\n";
+    vn_json(['ok' => true, 'csv' => $csv, 'count' => count($rows)]);
+  }
+
   case 'password': {
     $hash = vn_setting('admin_hash');
     if (!password_verify((string) ($in['current'] ?? ''), (string) $hash)) vn_fail('Das aktuelle Passwort ist nicht korrekt.', 401);

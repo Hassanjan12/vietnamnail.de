@@ -758,6 +758,28 @@
     saveClosed(closedOwn.filter(d => d !== b.dataset.unclose), "Tag wieder geöffnet");
   });
 
+  /* Datensicherung */
+  $("[data-export]").addEventListener("click", async () => {
+    try {
+      const r = await api("export");
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([r.csv], { type: "text/csv;charset=utf-8" }));
+      a.download = `vietnam-nails-termine-${ymd(today())}.csv`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      toast(`${r.count} Termine exportiert`);
+    } catch (x) { if (x.message !== "auth") toast(x.message); }
+  });
+
+  /* Selbsttest: Ist der Datenordner von außen lesbar? */
+  async function securityCheck() {
+    try {
+      const r = await fetch(`../data/zugriffstest.txt?${Date.now()}`, { cache: "no-store", credentials: "omit" });
+      const t = r.ok ? await r.text() : "";
+      $("[data-sec-alert]").hidden = !t.includes("VN-PRIVAT");
+    } catch (_) { /* nicht erreichbar = gut */ }
+  }
+
   $("[data-pw-form]").addEventListener("submit", async e => {
     e.preventDefault();
     const f = e.target, err = $("[data-pw-err]");
@@ -790,6 +812,7 @@
     }
     route();
     clearInterval(poll);
+    securityCheck();
     await checkNew();
     poll = setInterval(() => {
       checkNew(); // auch im Hintergrund, damit neue Buchungen gemeldet werden

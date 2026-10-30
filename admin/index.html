@@ -11,7 +11,7 @@
   <link rel="preload" href="../assets/fonts/bodoni-moda-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="../assets/fonts/jost-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../assets/css/fonts.css?v=20261102">
-  <link rel="stylesheet" href="admin.css?v=20261102">
+  <link rel="stylesheet" href="admin.css?v=20261103">
 </head>
 <body>
 
@@ -41,6 +41,9 @@
 
 <!-- ============ APP ============ -->
 <div class="app" data-app hidden>
+  <div class="sec-alert" data-sec-alert hidden role="alert">
+    <b>Sicherheitswarnung:</b> Der Datenordner ist öffentlich erreichbar. Bitte sofort den Entwickler oder Hoster informieren – die Termindaten müssen gesperrt werden (siehe README).
+  </div>
   <aside class="side">
     <div class="side-logo">
       <span>Vietnam Nails</span>
@@ -204,6 +207,11 @@
           <div class="chips closed-list" data-closed-list></div>
         </div>
         <div class="card">
+          <h2>Datensicherung</h2>
+          <p class="muted small">Alle Termine als Tabelle herunterladen (öffnet in Excel). Am besten einmal im Monat sichern und an einem sicheren Ort aufbewahren – die Datei enthält Namen und Telefonnummern.</p>
+          <button class="btn btn-dark" type="button" data-export>Termine exportieren</button>
+        </div>
+        <div class="card">
           <h2>Studio-Daten</h2>
           <dl class="kv" data-salon-info></dl>
           <p class="muted small">Öffnungszeiten, Leistungen, Preise und Plätze werden in der Datei <code>assets/salon.json</code> gepflegt und gelten für Website und Admin gleichzeitig.</p>
@@ -316,6 +324,6 @@
 
 <div class="toast" data-toast role="status" aria-live="polite"></div>
 
-<script src="admin.js?v=20261102" defer></script>
+<script src="admin.js?v=20261103" defer></script>
 </body>
 </html>

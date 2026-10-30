@@ -25,5 +25,17 @@ Website: `index.html` · Admin: `/admin/` · Server: `api/` (PHP ≥ 8.1 mit SQL
 - Nach Änderungen an CSS/JS die Versionsnummer `?v=` in den HTML-Dateien erhöhen.
 - E-Mail bei neuen Buchungen: `api/config.sample.php` nach `api/config.php` kopieren und Adresse eintragen.
 
+## Sicherheit
+- Termine liegen in einer SQLite-Datei im Ordner `data/` mit zufälligem, nicht erratbarem Namen
+  (steht in `data/dbname.php`). Der Ordner ist per `.htaccess` gesperrt.
+- **Am sichersten:** Datenordner außerhalb des Web-Verzeichnisses – in `api/config.php` `'data_dir'` setzen.
+- Der Admin-Bereich prüft bei jedem Öffnen, ob `data/` von außen lesbar ist, und zeigt sonst eine rote Warnung.
+  Bei Nginx-Hostern ohne `.htaccess`: `location ^~ /data/ { deny all; }` in der Server-Konfiguration.
+- Admin-Login: Passwort gehasht (bcrypt), Sperre nach 8 Fehlversuchen für 15 Minuten,
+  Sitzungs-Cookie `HttpOnly`, `Secure`, `SameSite=Strict`.
+- Content-Security-Policy und weitere Sicherheits-Header in `.htaccess`.
+  Wird das Inline-Skript in `index.html` geändert, muss der `sha256`-Wert in der CSP angepasst werden.
+
 ## Datensicherung
-`data/vietnamnails.sqlite` enthält alle Termine – regelmäßig per FTP sichern.
+Admin → Einstellungen → „Termine exportieren“ (CSV für Excel), am besten monatlich.
+Vollständige Sicherung: den Ordner `data/` per FTP herunterladen.
