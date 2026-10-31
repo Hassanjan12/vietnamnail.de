@@ -11,7 +11,7 @@
   <link rel="preload" href="../assets/fonts/bodoni-moda-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="../assets/fonts/jost-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../assets/css/fonts.css?v=20261105">
-  <link rel="stylesheet" href="admin.css?v=20261105">
+  <link rel="stylesheet" href="admin.css?v=20261106">
 </head>
 <body>
 
@@ -129,12 +129,32 @@
           <button class="icon-btn" data-cal-prev aria-label="Zurück"><i class="chev chev-l"></i></button>
           <button class="btn btn-line btn-sm" data-cal-today>Heute</button>
           <button class="icon-btn" data-cal-next aria-label="Weiter"><i class="chev chev-r"></i></button>
-          <h1 class="cal-title" data-cal-title></h1>
+          <h1 class="cal-h1">
+            <button class="cal-title" data-cal-pick aria-haspopup="dialog" aria-expanded="false" aria-controls="picker">
+              <span data-cal-title></span><i class="caret" aria-hidden="true"></i>
+            </button>
+          </h1>
+          <div class="picker" id="picker" data-picker role="dialog" aria-label="Datum wählen" hidden>
+            <div class="pk-head">
+              <button class="icon-btn" data-pk-prev aria-label="Vorheriger Monat"><i class="chev chev-l"></i></button>
+              <p class="pk-month" data-pk-month aria-live="polite"></p>
+              <button class="icon-btn" data-pk-next aria-label="Nächster Monat"><i class="chev chev-r"></i></button>
+            </div>
+            <div class="pk-dow"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div>
+            <div class="pk-grid" data-pk-grid></div>
+            <div class="pk-foot">
+              <button class="btn btn-line btn-sm" data-pk-jump="0">Heute</button>
+              <button class="btn btn-line btn-sm" data-pk-jump="1">Morgen</button>
+              <button class="btn btn-line btn-sm" data-pk-jump="7">In 1 Woche</button>
+              <label class="pk-input"><span>Datum</span><input type="date" data-pk-input></label>
+            </div>
+          </div>
         </div>
         <div class="cal-tools">
           <div class="seg" role="group" aria-label="Ansicht">
-            <button data-cal-mode="week" class="is-on">Woche</button>
             <button data-cal-mode="day">Tag</button>
+            <button data-cal-mode="week" class="is-on">Woche</button>
+            <button data-cal-mode="month">Monat</button>
           </div>
           <button class="btn btn-dark hide-m" data-new><span class="plus"></span>Neuer Termin</button>
         </div>
@@ -145,9 +165,10 @@
       </div>
       <div class="legend">
         <span><i class="lg lg-confirmed"></i>Gebucht</span>
+        <span><i class="lg lg-online"></i>Online gebucht</span>
         <span><i class="lg lg-done"></i>Erledigt</span>
         <span><i class="lg lg-cancelled"></i>Storniert / nicht erschienen</span>
-        <span class="muted">Tipp: In eine freie Stelle klicken, um dort einen Termin einzutragen.</span>
+        <span class="muted" data-cal-tip>Tipp: Auf das Datum oben klicken, um schnell zu einem Tag zu springen. In eine freie Stelle klicken, um dort einen Termin einzutragen.</span>
       </div>
     </section>
 
@@ -321,6 +342,6 @@
 
 <div class="toast" data-toast role="status" aria-live="polite"></div>
 
-<script src="admin.js?v=20261105" defer></script>
+<script src="admin.js?v=20261106" defer></script>
 </body>
 </html>

@@ -313,8 +313,12 @@
   const cal = { mode: window.innerWidth < 900 ? "day" : "week", anchor: today(), list: [] };
   const calEl = $("[data-cal]");
 
+  const monthStart = d => new Date(d.getFullYear(), d.getMonth(), 1);
+  const monthEnd = d => new Date(d.getFullYear(), d.getMonth() + 1, 0);
+
   function calRange() {
     if (cal.mode === "day") return [cal.anchor, cal.anchor];
+    if (cal.mode === "month") return [monday(monthStart(cal.anchor)), addDays(monday(monthEnd(cal.anchor)), 6)];
     const s = monday(cal.anchor);
     return [s, addDays(s, 6)];
   }
@@ -324,8 +328,10 @@
     const [a, b] = calRange();
     const stripStart = monday(cal.anchor);
     const from = cal.mode === "day" ? stripStart : a, to = cal.mode === "day" ? addDays(stripStart, 6) : b;
+    const req = cal.req = (cal.req || 0) + 1;
     try {
       const r = await api("bookings", { from: ymd(from), to: ymd(to) });
+      if (req !== cal.req) return; // inzwischen wurde weitergeblättert
       cal.list = r.bookings;
       cache(cal.list);
       renderCal();
@@ -335,9 +341,126 @@
   function syncCalMode() {
     $$("[data-cal-mode]").forEach(b => b.classList.toggle("is-on", b.dataset.calMode === cal.mode));
     $('[data-view="kalender"]').dataset.mode = cal.mode;
+    calEl.dataset.view = cal.mode === "month" ? "month" : "time";
   }
 
+  // Aktive Termine (ohne storniert / nicht erschienen)
+  const active = b => !["cancelled", "noshow"].includes(b.status);
+
+  function calTitle() {
+    const [a, b] = calRange();
+    if (cal.mode === "month") return `${MONTH[cal.anchor.getMonth()]} ${cal.anchor.getFullYear()}`;
+    if (cal.mode === "day") {
+      const rel = relDay(ymd(a));
+      return `${rel ? `${rel}, ` : `${DAY[a.getDay()]}, `}${a.getDate()}. ${MONTH[a.getMonth()]}`;
+    }
+    return a.getMonth() === b.getMonth()
+      ? `${a.getDate()}.–${b.getDate()}. ${MONTH[a.getMonth()]} ${a.getFullYear()}`
+      : `${a.getDate()}. ${MONTH_S[a.getMonth()]} – ${b.getDate()}. ${MONTH_S[b.getMonth()]} ${b.getFullYear()}`;
+  }
+
+  /* Monatsansicht: Überblick mit Anzahl und ersten Terminen je Tag */
+  function renderMonth() {
+    const [a, b] = calRange();
+    const m = cal.anchor.getMonth(), t0 = ymd(today());
+    const cap = Number(SALON.capacity) || 1;
+    let html = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map(x => `<div class="m-dow">${x}</div>`).join("");
+    for (let d = a; d <= b; d = addDays(d, 1)) {
+      const k = ymd(d);
+      const list = cal.list.filter(x => x.date === k && active(x)).sort((x, y) => x.time.localeCompare(y.time));
+      const h = SALON.hours[String(d.getDay())];
+      const closed = !h || (SALON.closedDates || []).includes(k);
+      // Auslastung: belegte Minuten im Verhältnis zur Kapazität des Tages
+      let load = 0;
+      if (h && !closed) {
+        const open = (toMin(h[1]) - toMin(h[0])) * cap;
+        load = Math.min(1, list.reduce((s, x) => s + x.duration, 0) / open);
+      }
+      const cls = ["m-cell", d.getMonth() !== m && "is-out", k === t0 && "is-today", closed && "is-closed", k < t0 && "is-past"].filter(Boolean).join(" ");
+      const shown = list.slice(0, 3).map(x => `<span class="m-ev${x.source === "online" ? " is-online" : ""}" data-open="${x.id}">${nice(x.time)} ${esc(x.name)}</span>`).join("");
+      html += `<div class="${cls}" data-mday="${k}" tabindex="0" role="button" aria-label="${DAY[d.getDay()]}, ${d.getDate()}. ${MONTH[d.getMonth()]}: ${list.length} Termine">
+        <div class="m-top"><b>${d.getDate()}</b>${list.length ? `<em>${list.length}</em>` : closed && d.getMonth() === m ? `<small>geschlossen</small>` : ""}</div>
+        ${load ? `<i class="m-load" style="--l:${Math.round(load * 100)}%"></i>` : ""}
+        <div class="m-evs">${shown}${list.length > 3 ? `<span class="m-more">+${list.length - 3} weitere</span>` : ""}</div>
+      </div>`;
+    }
+    calEl.innerHTML = html;
+  }
+
+  /* Datumsauswahl (Mini-Kalender) – schnell zu jedem Tag springen */
+  const pk = { el: $("[data-picker]"), btn: $("[data-cal-pick]"), month: null, counts: {}, req: 0 };
+  function openPicker() {
+    pk.month = monthStart(cal.anchor);
+    pk.el.hidden = false;
+    pk.btn.setAttribute("aria-expanded", "true");
+    $("[data-pk-input]").value = ymd(cal.anchor);
+    renderPicker();
+    loadPickerCounts();
+    const sel = $(".pk-day.is-sel", pk.el) || $(".pk-day", pk.el);
+    if (sel) sel.focus();
+  }
+  function closePicker(focusBtn) {
+    if (pk.el.hidden) return;
+    pk.el.hidden = true;
+    pk.btn.setAttribute("aria-expanded", "false");
+    if (focusBtn) pk.btn.focus();
+  }
+  async function loadPickerCounts() {
+    const from = pk.month, to = monthEnd(pk.month), req = ++pk.req;
+    try {
+      const r = await api("bookings", { from: ymd(from), to: ymd(to) });
+      if (req !== pk.req) return;
+      pk.counts = {};
+      r.bookings.filter(active).forEach(x => { pk.counts[x.date] = (pk.counts[x.date] || 0) + 1; });
+      renderPicker();
+    } catch (_) { /* Zahlen sind optional */ }
+  }
+  function renderPicker() {
+    const y = pk.month.getFullYear(), m = pk.month.getMonth(), t0 = ymd(today());
+    $("[data-pk-month]").textContent = `${MONTH[m]} ${y}`;
+    const [ra, rb] = calRange();
+    const selFrom = ymd(cal.mode === "month" ? monthStart(cal.anchor) : ra), selTo = ymd(cal.mode === "month" ? monthEnd(cal.anchor) : rb);
+    const start = monday(pk.month);
+    let html = "";
+    for (let i = 0; i < 42; i++) {
+      const d = addDays(start, i), k = ymd(d);
+      if (i >= 35 && d.getMonth() !== m) break;
+      const n = d.getMonth() === m ? (pk.counts[k] || 0) : 0;
+      const h = SALON.hours[String(d.getDay())];
+      const closed = !h || (SALON.closedDates || []).includes(k);
+      const cls = ["pk-day", d.getMonth() !== m && "is-out", k === t0 && "is-today", k >= selFrom && k <= selTo && "is-sel", closed && "is-closed"].filter(Boolean).join(" ");
+      html += `<button type="button" class="${cls}" data-pick="${k}" aria-label="${DAY[d.getDay()]}, ${d.getDate()}. ${MONTH[d.getMonth()]}${n ? `, ${n} Termine` : ""}${closed ? ", geschlossen" : ""}">
+        ${d.getDate()}${n ? `<i>${n}</i>` : ""}</button>`;
+    }
+    $("[data-pk-grid]").innerHTML = html;
+  }
+  function jumpTo(d) {
+    cal.anchor = d;
+    cal.scrolled = false;
+    closePicker(true);
+    loadCal();
+  }
+  pk.btn.addEventListener("click", e => { e.stopPropagation(); pk.el.hidden ? openPicker() : closePicker(true); });
+  $("[data-pk-prev]").addEventListener("click", () => { pk.month = new Date(pk.month.getFullYear(), pk.month.getMonth() - 1, 1); renderPicker(); loadPickerCounts(); });
+  $("[data-pk-next]").addEventListener("click", () => { pk.month = new Date(pk.month.getFullYear(), pk.month.getMonth() + 1, 1); renderPicker(); loadPickerCounts(); });
+  $("[data-pk-grid]").addEventListener("click", e => { const b = e.target.closest("[data-pick]"); if (b) jumpTo(parse(b.dataset.pick)); });
+  $$("[data-pk-jump]").forEach(b => b.addEventListener("click", () => jumpTo(addDays(today(), Number(b.dataset.pkJump)))));
+  $("[data-pk-input]").addEventListener("change", e => { if (e.target.value) jumpTo(parse(e.target.value)); });
+  // Pfeiltasten im Mini-Kalender
+  $("[data-pk-grid]").addEventListener("keydown", e => {
+    const b = e.target.closest("[data-pick]"); if (!b) return;
+    const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key];
+    if (!step) return;
+    e.preventDefault();
+    const d = addDays(parse(b.dataset.pick), step);
+    if (d.getMonth() !== pk.month.getMonth()) { pk.month = monthStart(d); renderPicker(); loadPickerCounts(); }
+    const next = $(`[data-pick="${ymd(d)}"]`, pk.el); if (next) next.focus();
+  });
+  document.addEventListener("click", e => { if (!pk.el.hidden && !e.target.closest("[data-picker]")) closePicker(false); });
+
   function renderCal() {
+    $("[data-cal-title]").textContent = calTitle();
+    if (cal.mode === "month") { renderMonth(); return; }
     const [a, b] = calRange();
     let days = [];
     for (let d = a; d <= b; d = addDays(d, 1)) days.push(d);
@@ -351,13 +474,8 @@
     cal.list.forEach(x => { start = Math.min(start, toMin(x.time)); end = Math.max(end, toMin(x.time) + x.duration); });
     start = Math.floor((start - 30) / 60) * 60;
     end = Math.ceil((end + 30) / 60) * 60;
-    const ppm = window.innerWidth < 900 ? 1.25 : 1.3;
+    const ppm = window.innerWidth < 900 ? 1.7 : 1.8; // 30 Min. ≈ 54 px – genug Platz für Zeit, Name und Leistung
     const height = (end - start) * ppm;
-
-    // Titel
-    const title = $("[data-cal-title]");
-    if (cal.mode === "day") title.textContent = `${DAY[a.getDay()]}, ${a.getDate()}. ${MONTH[a.getMonth()]}`;
-    else title.textContent = a.getMonth() === b.getMonth() ? `${a.getDate()}.–${b.getDate()}. ${MONTH[a.getMonth()]} ${a.getFullYear()}` : `${a.getDate()}. ${MONTH_S[a.getMonth()]} – ${b.getDate()}. ${MONTH_S[b.getMonth()]} ${b.getFullYear()}`;
 
     // Tagesleiste (mobil)
     const ws = monday(cal.anchor);
@@ -372,8 +490,8 @@
     const t0 = ymd(today());
     let html = `<div class="cal-corner"></div>`;
     html += days.map(d => {
-      const k = ymd(d), n = cal.list.filter(x => x.date === k && !["cancelled", "noshow"].includes(x.status)).length;
-      return `<div class="cal-hd${k === t0 ? " is-today" : ""}">${DAY_S[d.getDay()]}<b>${d.getDate()}</b><small>${n ? `${n} ${n === 1 ? "Termin" : "Termine"}` : "&nbsp;"}</small></div>`;
+      const k = ymd(d), n = cal.list.filter(x => x.date === k && active(x)).length;
+      return `<button type="button" class="cal-hd${k === t0 ? " is-today" : ""}" data-goday="${k}" title="Tagesansicht öffnen">${DAY_S[d.getDay()]}<b>${d.getDate()}</b><small>${n ? `${n} ${n === 1 ? "Termin" : "Termine"}` : "&nbsp;"}</small></button>`;
     }).join("");
     let times = "";
     for (let m = start; m <= end; m += 60) times += `<span style="top:${(m - start) * ppm}px">${String(m / 60).padStart(2, "0")}:00</span>`;
@@ -393,10 +511,10 @@
       const evs = layout(cal.list.filter(x => x.date === k)).map(({ b, col, cols }) => {
         const top = (toMin(b.time) - start) * ppm, hgt = Math.max(22, b.duration * ppm - 2);
         const w = 100 / cols;
-        return `<button class="ev ev-${b.status}${hgt < 44 ? " is-short" : ""}" data-open="${b.id}"
+        return `<button class="ev ev-${b.status}${b.source === "online" ? " is-online" : ""}${hgt < 44 ? " is-short" : ""}" data-open="${b.id}"
           style="top:${top}px;height:${hgt}px;left:calc(${col * w}% + 3px);width:calc(${w}% - 6px)"
           title="${esc(`${nice(b.time)}–${nice(endTime(b))} ${b.name} · ${b.title}`)}">
-          <small>${nice(b.time)}–${nice(endTime(b))}</small><b>${hgt < 44 ? `${nice(b.time)} ` : ""}${esc(b.name)}</b><span>${esc(b.title)}</span></button>`;
+          <b>${hgt < 44 ? `${nice(b.time)} ` : ""}${esc(b.name)}</b><span>${nice(b.time)}–${nice(endTime(b))} · ${esc(b.title)}</span></button>`;
       }).join("");
       const now = k === t0 && nowM > start && nowM < end ? `<div class="cal-now" style="top:${(nowM - start) * ppm}px"></div>` : "";
       return `<div class="cal-col${closed ? " is-closed" : ""}" data-day="${k}" data-start="${start}" style="height:${height}px">${off}${evs}${now}<div class="cal-ghost"></div></div>`;
@@ -438,8 +556,17 @@
   }
 
   // Klick in freie Fläche → neuer Termin
+  const openDay = k => { cal.anchor = parse(k); cal.mode = "day"; cal.scrolled = false; loadCal(); };
+  calEl.addEventListener("keydown", e => {
+    const c = e.target.closest("[data-mday]");
+    if (c && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openDay(c.dataset.mday); }
+  });
   calEl.addEventListener("click", e => {
     if (e.target.closest("[data-open]")) return;
+    const md = e.target.closest("[data-mday]");
+    if (md) { openDay(md.dataset.mday); return; }
+    const gd = e.target.closest("[data-goday]");
+    if (gd) { if (cal.mode !== "day") openDay(gd.dataset.goday); return; }
     const col = e.target.closest(".cal-col");
     if (!col || col.classList.contains("is-closed")) return;
     const ppm = parseFloat(getComputedStyle(calEl).getPropertyValue("--ppm"));
@@ -449,7 +576,7 @@
   });
   calEl.addEventListener("mousemove", e => {
     const col = e.target.closest(".cal-col");
-    if (!col || e.target.closest("[data-open]")) return;
+    if (!col || col.classList.contains("is-closed") || e.target.closest("[data-open]")) return;
     const ppm = parseFloat(getComputedStyle(calEl).getPropertyValue("--ppm"));
     const y = e.clientY - col.getBoundingClientRect().top;
     const q = Math.floor(y / ppm / 15) * 15;
@@ -459,10 +586,15 @@
     g.textContent = `+ ${nice(toHM(Number(col.dataset.start) + q))}`;
   });
 
-  $("[data-cal-prev]").addEventListener("click", () => { cal.anchor = addDays(cal.anchor, cal.mode === "day" ? -1 : -7); loadCal(); });
-  $("[data-cal-next]").addEventListener("click", () => { cal.anchor = addDays(cal.anchor, cal.mode === "day" ? 1 : 7); loadCal(); });
+  const shift = dir => {
+    if (cal.mode === "month") cal.anchor = new Date(cal.anchor.getFullYear(), cal.anchor.getMonth() + dir, 1);
+    else cal.anchor = addDays(cal.anchor, (cal.mode === "day" ? 1 : 7) * dir);
+    loadCal();
+  };
+  $("[data-cal-prev]").addEventListener("click", () => shift(-1));
+  $("[data-cal-next]").addEventListener("click", () => shift(1));
   $("[data-cal-today]").addEventListener("click", () => { cal.anchor = today(); cal.scrolled = false; loadCal(); });
-  $$("[data-cal-mode]").forEach(b => b.addEventListener("click", () => { cal.mode = b.dataset.calMode; loadCal(); }));
+  $$("[data-cal-mode]").forEach(b => b.addEventListener("click", () => { cal.mode = b.dataset.calMode; cal.scrolled = false; loadCal(); }));
   $("[data-daystrip]").addEventListener("click", e => {
     const b = e.target.closest("[data-strip]"); if (!b) return;
     cal.anchor = parse(b.dataset.strip); cal.mode = "day"; loadCal();
@@ -471,9 +603,9 @@
   let sx = null;
   $("[data-cal-wrap]").addEventListener("touchstart", e => { sx = e.touches[0].clientX; }, { passive: true });
   $("[data-cal-wrap]").addEventListener("touchend", e => {
-    if (sx === null || cal.mode !== "day") return;
+    if (sx === null || cal.mode === "week") return;
     const dx = e.changedTouches[0].clientX - sx;
-    if (Math.abs(dx) > 70) { cal.anchor = addDays(cal.anchor, dx < 0 ? 1 : -1); loadCal(); }
+    if (Math.abs(dx) > 70) shift(dx < 0 ? 1 : -1);
     sx = null;
   });
 
@@ -782,7 +914,8 @@
   /* ---------------- Tastatur ---------------- */
   document.addEventListener("keydown", e => {
     if (e.key === "Escape") {
-      if (!modal.hidden) closeForm();
+      if (!pk.el.hidden) closePicker(true);
+      else if (!modal.hidden) closeForm();
       else if (!drawer.hidden) closeDrawer();
     }
     const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || "");
