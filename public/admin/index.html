@@ -10,8 +10,8 @@
   <link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
   <link rel="preload" href="../assets/fonts/bodoni-moda-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="../assets/fonts/jost-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="../assets/css/fonts.css?v=20261102">
-  <link rel="stylesheet" href="admin.css?v=20261103">
+  <link rel="stylesheet" href="../assets/css/fonts.css?v=20261104">
+  <link rel="stylesheet" href="admin.css?v=20261104">
 </head>
 <body>
 
@@ -41,9 +41,6 @@
 
 <!-- ============ APP ============ -->
 <div class="app" data-app hidden>
-  <div class="sec-alert" data-sec-alert hidden role="alert">
-    <b>Sicherheitswarnung:</b> Der Datenordner ist öffentlich erreichbar. Bitte sofort den Entwickler oder Hoster informieren – die Termindaten müssen gesperrt werden (siehe README).
-  </div>
   <aside class="side">
     <div class="side-logo">
       <span>Vietnam Nails</span>
@@ -191,7 +188,7 @@
         <form class="card" data-pw-form>
           <h2>Passwort ändern</h2>
           <label class="field"><span>Aktuelles Passwort</span><input type="password" name="current" autocomplete="current-password" required></label>
-          <label class="field"><span>Neues Passwort (mind. 8 Zeichen)</span><input type="password" name="new" autocomplete="new-password" required></label>
+          <label class="field"><span>Neues Passwort (mind. 10 Zeichen)</span><input type="password" name="new" autocomplete="new-password" required></label>
           <p class="form-err" data-pw-err></p>
           <button class="btn btn-dark" type="submit">Speichern</button>
         </form>
@@ -324,6 +321,6 @@
 
 <div class="toast" data-toast role="status" aria-live="polite"></div>
 
-<script src="admin.js?v=20261103" defer></script>
+<script src="admin.js?v=20261104" defer></script>
 </body>
 </html>

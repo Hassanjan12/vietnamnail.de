@@ -1,3 +1,4 @@
-data/
-api/config.php
+.wrangler/
+node_modules/
+.dev.vars
 .DS_Store

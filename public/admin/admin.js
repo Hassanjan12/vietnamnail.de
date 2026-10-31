@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const API = "../api/admin.php";
+  const API = "/api/admin";
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -96,7 +96,7 @@
     err.textContent = "";
     const pw = authForm.password.value;
     if (setupMode) {
-      if (pw.length < 8) { err.textContent = "Mindestens 8 Zeichen."; return; }
+      if (pw.length < 10) { err.textContent = "Mindestens 10 Zeichen."; return; }
       if (pw !== authForm.password2.value) { err.textContent = "Die Passwörter stimmen nicht überein."; return; }
     }
     try {
@@ -771,15 +771,6 @@
     } catch (x) { if (x.message !== "auth") toast(x.message); }
   });
 
-  /* Selbsttest: Ist der Datenordner von außen lesbar? */
-  async function securityCheck() {
-    try {
-      const r = await fetch(`../data/zugriffstest.txt?${Date.now()}`, { cache: "no-store", credentials: "omit" });
-      const t = r.ok ? await r.text() : "";
-      $("[data-sec-alert]").hidden = !t.includes("VN-PRIVAT");
-    } catch (_) { /* nicht erreichbar = gut */ }
-  }
-
   $("[data-pw-form]").addEventListener("submit", async e => {
     e.preventDefault();
     const f = e.target, err = $("[data-pw-err]");
@@ -812,7 +803,6 @@
     }
     route();
     clearInterval(poll);
-    securityCheck();
     await checkNew();
     poll = setInterval(() => {
       checkNew(); // auch im Hintergrund, damit neue Buchungen gemeldet werden
@@ -828,7 +818,7 @@
       if (s.auth) startApp(); else showAuth(s.setup);
     } catch (e) {
       authEl.hidden = false;
-      $("[data-auth-err]").textContent = "Der Server ist nicht erreichbar. Läuft PHP auf dem Webspace?";
+      $("[data-auth-err]").textContent = "Der Server ist nicht erreichbar. Bitte später erneut versuchen.";
     }
   })();
 })();

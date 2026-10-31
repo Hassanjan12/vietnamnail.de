@@ -329,9 +329,21 @@
       const k = availKey(d);
       if (avail[k]) return;
       avail[k] = "loading";
-      fetch(`api/slots.php?month=${ymd(d).slice(0, 7)}&dur=${Math.max(duration(), 30)}`, { cache: "no-store" })
+      fetch(`/api/slots?month=${ymd(d).slice(0, 7)}&dur=${Math.max(duration(), 30)}`, { cache: "no-store" })
         .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-        .then(j => { avail[k] = j.days; (j.closed || []).forEach(x => closedExtra.add(x)); if (S.step === 2) { renderCal(); renderSlots(); } })
+        .then(j => {
+          avail[k] = j.days;
+          (j.closed || []).forEach(x => closedExtra.add(x));
+          // Ist im angezeigten Monat nichts mehr frei (z. B. am Monatsende), direkt den nächsten Monat zeigen
+          const shown = ymd(S.month).slice(0, 7) === k.split("|")[0];
+          const empty = Object.values(j.days).every(list => !list.length);
+          if (S.step === 2 && shown && empty && !S.date && !S.autoAdvanced) {
+            S.autoAdvanced = true;
+            const next = new Date(S.month.getFullYear(), S.month.getMonth() + 1, 1);
+            if (next <= lastDay) S.month = next;
+          }
+          if (S.step === 2) { renderCal(); renderSlots(); }
+        })
         .catch(() => { avail[k] = "offline"; });
     };
     const slotsFor = d => {
@@ -541,7 +553,7 @@
       };
       let saved = false;
       try {
-        const r = await fetch("api/book.php", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        const r = await fetch("/api/book", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
         const j = await r.json().catch(() => ({}));
         if (r.ok && j.ok) { S.ref = j.ref; saved = true; }
         else if (r.status === 409 || r.status === 400 || r.status === 429) {
@@ -625,7 +637,7 @@
     };
     const resetBk = () => {
       S.step = 1; S.tab = "hands"; S.sel = { hands: null, feet: null, lash: null }; S.extras.clear();
-      S.date = null; S.time = null; S.ref = null; S.saved = false; els.form.reset();
+      S.date = null; S.time = null; S.ref = null; S.saved = false; S.autoAdvanced = false; els.form.reset();
     };
 
     $$("[data-book]").forEach(b => b.addEventListener("click", e => { e.preventDefault(); openBk(b, b.dataset.preselect); }));
@@ -671,7 +683,7 @@
   /* ---------------- Anonyme Besucherzählung (ohne Cookies) ---------------- */
   try {
     const payload = JSON.stringify({ p: location.pathname, r: document.referrer });
-    if (navigator.sendBeacon) navigator.sendBeacon("api/track.php", new Blob([payload], { type: "application/json" }));
-    else fetch("api/track.php", { method: "POST", body: payload, keepalive: true }).catch(() => {});
+    if (navigator.sendBeacon) navigator.sendBeacon("/api/track", new Blob([payload], { type: "application/json" }));
+    else fetch("/api/track", { method: "POST", body: payload, keepalive: true }).catch(() => {});
   } catch (_) { /* Zählung ist optional */ }
 })();
