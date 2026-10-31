@@ -1,5 +1,5 @@
 /** GET /api/slots?month=2026-11&dur=30 → freie Startzeiten je Tag des Monats */
-import { handle, json, fail, db, closedDates, freeSlots, addDays } from "../../src/lib.js";
+import { handle, json, fail, db, closedDates, freeSlots, addDays } from "../lib.js";
 
 export const onRequestGet = handle(async ({ request, env }) => {
   const url = new URL(request.url);

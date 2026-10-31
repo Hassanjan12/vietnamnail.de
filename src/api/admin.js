@@ -5,7 +5,7 @@ import {
   handle, json, fail, readJson, db, getSetting, setSetting, rateLimit, hashPassword, verifyPassword, sha256, randomHex,
   clean, validDate, validTime, resolve, busy, fits, toMin, closedDates, bookingOut, newRef, berlinNow, addDays,
   STATUSES, SOURCES, salon
-} from "../../src/lib.js";
+} from "../lib.js";
 
 const SESSION_DAYS = 14;
 const MIN_PW = 10;

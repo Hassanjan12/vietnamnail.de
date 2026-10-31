@@ -1,5 +1,5 @@
 /** POST /api/book → neue Online-Buchung (sofort fest gebucht) */
-import { handle, json, fail, readJson, db, rateLimit, clean, validDate, validTime, resolve, busy, closedDates, freeSlots, insertIfFree, newRef, salon } from "../../src/lib.js";
+import { handle, json, fail, readJson, db, rateLimit, clean, validDate, validTime, resolve, busy, closedDates, freeSlots, insertIfFree, newRef, salon } from "../lib.js";
 
 export const onRequestPost = handle(async ({ request, env }) => {
   const input = await readJson(request);

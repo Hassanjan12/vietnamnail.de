@@ -2,7 +2,7 @@
  * POST /api/track – anonyme Besucherzählung ohne Cookies.
  * Gespeichert wird nur ein Hash aus (Tagesschlüssel + IP + Browser); der Schlüssel wechselt täglich.
  */
-import { db, getSetting, setSetting, sha256, randomHex, berlinNow } from "../../src/lib.js";
+import { db, getSetting, setSetting, sha256, randomHex, berlinNow } from "../lib.js";
 
 const MAP = { google: "Google", instagram: "Instagram", facebook: "Facebook", "fb.": "Facebook", tiktok: "TikTok", bing: "Bing",
   whatsapp: "WhatsApp", "wa.me": "WhatsApp", maps: "Google Maps", duckduckgo: "DuckDuckGo" };

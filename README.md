@@ -1,26 +1,26 @@
-# Vietnam Nails – Website & Admin (Cloudflare)
+# Vietnam Nails – Website & Admin (Cloudflare Worker)
 
-- Website: `public/` (wird von Cloudflare Pages ausgeliefert)
-- Server-Funktionen: `functions/api/` (Cloudflare Pages Functions) + `src/lib.js`
+- Website: `public/` (statische Dateien, von Cloudflare direkt ausgeliefert)
+- Server: `src/worker.js` → `src/api/*` (nur `/api/*` läuft durch den Worker), gemeinsame Funktionen in `src/lib.js`
 - Datenbank: Cloudflare D1 (Binding `DB`), Tabellen werden automatisch angelegt
 - Admin: `https://DOMAIN/admin/`
 
 ## Veröffentlichen (einmalig)
-1. **D1-Datenbank anlegen:** Cloudflare-Dashboard → *Storage & Databases* → *D1* → *Create*
-   Name `vietnam-nails`, **Location: Europäische Union (Jurisdiction EU)**.
-2. **Pages-Projekt anlegen:** *Workers & Pages* → *Create* → *Pages* → *Connect to Git* → dieses Repository.
-   - Framework: *None*, Build-Befehl: leer, **Build output directory: `public`**
-3. **Datenbank verbinden:** Pages-Projekt → *Settings* → *Bindings* → *Add* → *D1 database*
-   Variablenname **`DB`**, Datenbank `vietnam-nails` (für *Production*), danach neu deployen.
-4. **Domain verbinden:** Pages-Projekt → *Custom domains* → Domain eintragen (Domain muss bei Cloudflare verwaltet werden).
-5. **Sofort** `https://DOMAIN/admin/` öffnen und das Admin-Passwort festlegen (mind. 10 Zeichen).
-6. Optional: *Email Routing* aktivieren, damit `info@DOMAIN` an ein bestehendes Postfach weitergeleitet wird.
+1. **D1-Datenbank anlegen:** Dashboard → *Storage & Databases* → *D1* → *Create*,
+   Name `vietnam-nails`, **Location/Jurisdiction: EU**. Die **Database ID** in `wrangler.toml` bei `database_id` eintragen.
+2. **Worker anlegen:** *Workers & Pages* → *Create* → *Import a repository* → dieses Repository.
+   - Projektname: **`vietnamnail-de`** (muss mit `name` in `wrangler.toml` übereinstimmen)
+   - Build command: leer · Deploy command: `npx wrangler deploy` (Standard)
+3. **Deploy** – danach ist die Seite unter `vietnamnail-de.<konto>.workers.dev` erreichbar.
+4. **Sofort** `/admin/` öffnen und das Admin-Passwort festlegen (mind. 10 Zeichen).
+5. **Domain:** Worker → *Settings* → *Domains & Routes* → *Add* → *Custom domain*.
+6. Optional: *Email Routing*, damit `info@DOMAIN` an ein bestehendes Postfach weitergeleitet wird.
 
-Jeder Push auf den Hauptzweig veröffentlicht die Website automatisch neu.
+Jeder Push auf `master` veröffentlicht automatisch neu.
 
 ## Lokal testen
 ```
-npx wrangler@4.149.0 pages dev
+npx wrangler@4.149.0 dev
 ```
 (liest `wrangler.toml`, legt eine lokale Test-Datenbank in `.wrangler/` an)
 

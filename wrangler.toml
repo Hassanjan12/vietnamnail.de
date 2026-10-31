@@ -1,11 +1,21 @@
-# Cloudflare Pages – Vietnam Nails
-name = "vietnam-nails"
-pages_build_output_dir = "public"
+# Cloudflare Worker – Vietnam Nails
+# Der Name muss mit dem Projektnamen im Cloudflare-Dashboard übereinstimmen.
+name = "vietnamnail-de"
+main = "src/worker.js"
 compatibility_date = "2026-09-01"
 
-# D1-Datenbank für Termine, Statistik und Admin-Zugang.
-# Im Cloudflare-Dashboard anlegen (Standort: EU) und die ID hier eintragen.
+# Website aus „public/“; nur /api/* geht durch den Worker
+[assets]
+directory = "./public"
+binding = "ASSETS"
+not_found_handling = "404-page"
+run_worker_first = ["/api/*"]
+
+# D1-Datenbank für Termine, Statistik und Admin-Zugang (im Dashboard mit Standort EU anlegen, ID hier eintragen)
 [[d1_databases]]
 binding = "DB"
 database_name = "vietnam-nails"
-database_id = "HIER-D1-DATENBANK-ID-EINTRAGEN"
+database_id = "00000000-0000-0000-0000-000000000000"
+
+[observability]
+enabled = true
