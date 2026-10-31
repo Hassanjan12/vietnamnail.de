@@ -1,6 +1,6 @@
 # Cloudflare Worker – Vietnam Nails
 # Der Name muss mit dem Projektnamen im Cloudflare-Dashboard übereinstimmen.
-name = "vietnamnail-de"
+name = "vietnamnail-de2"
 main = "src/worker.js"
 compatibility_date = "2026-09-01"
 
