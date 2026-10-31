@@ -14,10 +14,10 @@ run_worker_first = ["/api/*"]
 # D1-Datenbank für Termine, Statistik und Admin-Zugang.
 # Schritt 2: im Dashboard anlegen (Standort EU), ID eintragen und die drei Zeilen unten aktivieren.
 # Solange keine Datenbank verbunden ist, läuft die Website; Buchungen gehen dann per WhatsApp.
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "vietnam-nails"
-# database_id = "HIER-ID-EINTRAGEN"
+[[d1_databases]]
+binding = "DB"
+database_name = "vietnam-nails"
+database_id = "37df3807-cacc-4379-9f87-628052cd4726"
 
 [observability]
 enabled = true
