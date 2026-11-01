@@ -231,30 +231,48 @@
   }
 
   /* ---------------- Galerie & Lightbox ---------------- */
+  // Fotos kommen aus dem Admin (/api/gallery); Reserve: die mitgelieferten Startbilder
   const gal = $("[data-gallery]");
-  gal.innerHTML = GALLERY.map(([f, cat, t, d], i) => `
-    <button class="g reveal" data-cat="${cat}" data-i="${i}" aria-label="${esc(t)}: ${esc(d)} – vergrößern">
-      <img src="assets/img/gallery/${f}-sm.webp" alt="${esc(t)} – ${esc(d)}" loading="lazy" width="${DIMS[f][0]}" height="${DIMS[f][1]}">
-      <span class="g-cap">${esc(t)}<b>${esc(d)}</b></span>
-    </button>`).join("");
-  $$(".g", gal).forEach(el => el.classList.add("is-in"));
-
-  // Zuerst nur eine Auswahl zeigen, Rest per Knopf
+  const STATIC_PHOTOS = GALLERY.map(([f, cat, title, sub]) => ({ cat, title, sub, w: DIMS[f][0], h: DIMS[f][1],
+    sm: `assets/img/gallery/${f}-sm.webp`, lg: `assets/img/gallery/${f}.webp` }));
+  let PHOTOS = [];
   const GAL_FIRST = 9;
   const moreWrap = $("[data-gal-more-wrap]");
   let galOpen = false;
-  const collapse = () => {
-    const all = !$("[data-filter].is-active") || $("[data-filter].is-active").dataset.filter === "all";
-    $$(".g", gal).forEach((g, i) => g.classList.toggle("is-collapsed", all && !galOpen && i >= GAL_FIRST));
-    moreWrap.hidden = !all || galOpen || GALLERY.length <= GAL_FIRST;
-    $("[data-gal-more]").textContent = `Alle ${GALLERY.length} Arbeiten ansehen`;
+  const activeFilter = () => ($("[data-filter].is-active") || {}).dataset?.filter || "all";
+  const applyFilter = () => {
+    const f = activeFilter();
+    $$(".g", gal).forEach(g => g.classList.toggle("is-hidden", f !== "all" && g.dataset.cat !== f));
   };
-  collapse();
+  // Zuerst nur eine Auswahl zeigen, Rest per Knopf
+  const collapse = () => {
+    const all = activeFilter() === "all";
+    $$(".g", gal).forEach((g, i) => g.classList.toggle("is-collapsed", all && !galOpen && i >= GAL_FIRST));
+    moreWrap.hidden = !all || galOpen || PHOTOS.length <= GAL_FIRST;
+    $("[data-gal-more]").textContent = `Alle ${PHOTOS.length} Arbeiten ansehen`;
+  };
+  const photoAlt = p => [p.title, p.sub].filter(Boolean).join(" – ") || "Arbeit aus unserem Studio";
+  function renderGallery(list) {
+    PHOTOS = list;
+    gal.innerHTML = list.map((p, i) => `
+      <button class="g reveal is-in" data-cat="${esc(p.cat)}" data-i="${i}" aria-label="${esc(photoAlt(p))} – vergrößern">
+        <img src="${esc(p.sm)}" alt="${esc(photoAlt(p))}" loading="lazy" width="${Number(p.w) || 700}" height="${Number(p.h) || 900}">
+        ${p.title || p.sub ? `<span class="g-cap">${esc(p.title)}<b>${esc(p.sub)}</b></span>` : ""}
+      </button>`).join("");
+    applyFilter();
+    collapse();
+    gal.classList.add("is-ready");
+  }
+  fetch("/api/gallery", { cache: "no-store" })
+    .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+    .then(j => renderGallery(Array.isArray(j.photos) ? j.photos : STATIC_PHOTOS))
+    .catch(() => renderGallery(STATIC_PHOTOS));
+  setTimeout(() => { if (!gal.classList.contains("is-ready")) renderGallery(STATIC_PHOTOS); }, 3000);
   $("[data-gal-more]").addEventListener("click", () => { galOpen = true; collapse(); });
 
   $$("[data-filter]").forEach(b => b.addEventListener("click", () => {
     $$("[data-filter]").forEach(x => x.classList.toggle("is-active", x === b));
-    $$(".g", gal).forEach(g => g.classList.toggle("is-hidden", b.dataset.filter !== "all" && g.dataset.cat !== b.dataset.filter));
+    applyFilter();
     collapse();
   }));
 
@@ -262,10 +280,10 @@
   let lbList = [], lbPos = 0, lbReturn = null;
   const lbShow = p => {
     lbPos = (p + lbList.length) % lbList.length;
-    const [f, , t, d] = GALLERY[lbList[lbPos]];
-    lbImg.src = `assets/img/gallery/${f}.webp`;
-    lbImg.alt = `${t} – ${d}`;
-    lbCap.textContent = `${t} — ${d}`;
+    const ph = PHOTOS[lbList[lbPos]];
+    lbImg.src = ph.lg;
+    lbImg.alt = photoAlt(ph);
+    lbCap.textContent = [ph.title, ph.sub].filter(Boolean).join(" — ");
     lbCount.textContent = `${String(lbPos + 1).padStart(2, "0")} / ${String(lbList.length).padStart(2, "0")}`;
   };
   const lbOpen = btn => {

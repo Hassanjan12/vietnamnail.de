@@ -103,8 +103,62 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_hits ON hits(k, ts)`,
   `CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, expires INTEGER NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS customers (id INTEGER PRIMARY KEY AUTOINCREMENT, ckey TEXT UNIQUE NOT NULL,
-    note TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL)`
+    note TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL)`,
+  // Galerie: Metadaten getrennt von den Bilddaten, damit Listen schnell bleiben
+  `CREATE TABLE IF NOT EXISTS photos (id INTEGER PRIMARY KEY AUTOINCREMENT, sort INTEGER NOT NULL DEFAULT 0,
+    cat TEXT NOT NULL DEFAULT 'elegant', title TEXT NOT NULL DEFAULT '', sub TEXT NOT NULL DEFAULT '',
+    static TEXT, mime TEXT NOT NULL DEFAULT 'image/webp', w INTEGER NOT NULL DEFAULT 700, h INTEGER NOT NULL DEFAULT 900,
+    created_at TEXT NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS photo_data (id INTEGER NOT NULL, size TEXT NOT NULL, b64 TEXT NOT NULL, PRIMARY KEY (id, size))`
 ];
+
+/* ---------- Galerie ---------- */
+
+export const PHOTO_CATS = { elegant: "Elegant", color: "Farbe", art: "Nail Art", lash: "Wimpern" };
+// Startbilder (liegen als Dateien in public/assets/img/gallery) – werden beim ersten Aufruf in die Galerie übernommen
+const GALLERY_SEED = [
+  ["rosa-marmor-gold", "elegant", "Rosé & Marmor", "Blattgold", 933], ["stiletto-tuerkis-gold", "art", "Stiletto", "Türkis, Gold & Cat-Eye", 875],
+  ["nude-glitzer-schleifen", "elegant", "Mandelform", "Nude, Glitzer & Schleifen", 933], ["tuerkis-3d-blumen", "color", "Ombré", "Türkis mit 3D-Blüten", 658],
+  ["halloween-patchwork", "art", "Handgemalt", "Patchwork Nail Art", 933], ["perlmutt-chrome", "elegant", "Chrome", "Perlmutt-Effekt", 761],
+  ["hellblau-goldfolie", "color", "Coffin", "Hellblau mit Goldfolie", 1244], ["stiletto-blau-rosen", "art", "3D-Modellage", "Stiletto mit Rosen", 786],
+  ["marmor-weiss-muster", "elegant", "Marmor", "Milchweiß mit Ornament", 933], ["blau-ombre-glitzer", "color", "Ombré", "Blau mit Glitzerlinien", 733],
+  ["halloween-kitty", "art", "Character Art", "French mit 3D-Details", 933], ["nude-braun-blume", "elegant", "3D-Blüte", "Nude & Braun", 743],
+  ["tuerkis-schwarz-schleifen", "color", "Statement", "Türkis & Schwarz", 934], ["nude-weiss-ombre", "elegant", "Babyboomer", "Nude mit weißem Ombré", 844],
+  ["wimpern", "lash", "Wimpern", "Volumen-Verlängerung", 941]
+];
+
+async function seedGallery(DB) {
+  if (await getSetting(DB, "gallery_seeded")) return;
+  const now = new Date().toISOString();
+  await DB.batch([
+    ...GALLERY_SEED.map(([f, cat, title, sub, h], i) =>
+      DB.prepare("INSERT INTO photos(sort, cat, title, sub, static, mime, w, h, created_at) VALUES(?,?,?,?,?,?,?,?,?)").bind(i + 1, cat, title, sub, f, "image/webp", 700, h, now)),
+    DB.prepare("INSERT INTO settings(k, v) VALUES('gallery_seeded', '1') ON CONFLICT(k) DO NOTHING")
+  ]);
+}
+
+/** Galerie für Website und Admin (ohne Bilddaten, mit fertigen Bild-Adressen) */
+export async function galleryList(DB) {
+  await seedGallery(DB);
+  const { results } = await DB.prepare("SELECT id, sort, cat, title, sub, static, mime, w, h, created_at FROM photos ORDER BY sort, id").all();
+  return results.map(r => ({
+    id: r.id, cat: r.cat, title: r.title, sub: r.sub, w: r.w, h: r.h, uploaded: !r.static,
+    sm: r.static ? `/assets/img/gallery/${r.static}-sm.webp` : `/api/photo/${r.id}/sm`,
+    lg: r.static ? `/assets/img/gallery/${r.static}.webp` : `/api/photo/${r.id}/lg`
+  }));
+}
+
+/** Bytes ↔ Base64 (in Stücken, damit auch große Bilder schnell gehen) */
+export function toB64(bytes) {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+export function fromB64(b64) {
+  const bin = atob(b64), out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
 
 /* ---------- Kunden ---------- */
 
@@ -182,7 +236,8 @@ async function cleanup(DB) {
     DB.prepare("DELETE FROM sessions WHERE expires < ?").bind(now),
     DB.prepare("DELETE FROM hits WHERE ts < ?").bind(now - 86400),
     // Kundenkarten ohne verbleibende Termine entfernen (gleiche 12-Monats-Frist)
-    DB.prepare("DELETE FROM customers WHERE ckey NOT IN (SELECT customer_key FROM bookings WHERE customer_key IS NOT NULL)")
+    DB.prepare("DELETE FROM customers WHERE ckey NOT IN (SELECT customer_key FROM bookings WHERE customer_key IS NOT NULL)"),
+    DB.prepare("DELETE FROM photo_data WHERE id NOT IN (SELECT id FROM photos)")
   ]);
 }
 

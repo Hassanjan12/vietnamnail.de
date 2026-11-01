@@ -298,6 +298,7 @@ h2 em, h1 em { font-weight: 400; }
 .g:hover img { transform: scale(1.05); }
 .g:hover::after, .g:hover .g-cap, .g:focus-visible .g-cap, .g:focus-visible::after { opacity: 1; transform: none; }
 .g.is-hidden, .g.is-collapsed { display: none; }
+.js .gallery:not(.is-ready) { min-height: 80vh; }
 .gal-more { display: flex; justify-content: center; margin-top: 36px; }
 .gal-more .btn-line { color: var(--white); min-height: 52px; padding: 0 32px; }
 .gal-more .btn-line:hover { background: var(--white); color: var(--black); }

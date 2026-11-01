@@ -108,7 +108,7 @@
   $("[data-logout]").addEventListener("click", async () => { try { await api("logout"); } catch (_) {} showAuth(false); });
 
   /* ---------------- Navigation ---------------- */
-  const VIEWS = ["uebersicht", "kalender", "termine", "kunden", "leistungen", "einstellungen", "mehr"];
+  const VIEWS = ["uebersicht", "kalender", "termine", "kunden", "leistungen", "galerie", "einstellungen", "mehr"];
   let view = null, sub = null;
 
   function route() {
@@ -123,6 +123,7 @@
     if (v === "einstellungen") { renderSettings(); loadClosed(); }
     if (v === "kunden") sub ? loadCustomer(Number(sub)) : loadCustomers();
     if (v === "leistungen") loadCatalog();
+    if (v === "galerie") loadGallery();
     window.scrollTo(0, 0);
   }
   window.addEventListener("hashchange", () => { if (!appEl.hidden) route(); });
@@ -437,6 +438,137 @@
   });
   $("[data-cd-new]").addEventListener("click", () => { if (custCur) openForm(null, { name: custCur.name, phone: custCur.phone }); });
   $("[data-logout-m]").addEventListener("click", () => $("[data-logout]").click());
+
+  /* ---------------- Galerie ---------------- */
+  const GCATS = { elegant: "Elegant", color: "Farbe", art: "Nail Art", lash: "Wimpern" };
+  const gl = { list: [], grid: $("[data-gl-grid]"), queue: $("[data-gl-queue]"), busy: false };
+
+  async function loadGallery() {
+    try {
+      const r = await api("gallery_list");
+      gl.list = r.photos;
+      renderGalleryAdmin();
+    } catch (e) { if (e.message !== "auth") toast(e.message); }
+  }
+  function renderGalleryAdmin() {
+    const n = gl.list.length;
+    $("[data-gl-count]").textContent = `${n} ${n === 1 ? "Foto" : "Fotos"} auf der Website · Reihenfolge wie auf der Website (die ersten 9 sind sofort sichtbar)`;
+    gl.grid.innerHTML = gl.list.map((p, i) => `
+      <div class="gl-card" data-id="${p.id}">
+        <div class="gl-img"><img src="${esc(p.sm)}" alt="${esc([p.title, p.sub].filter(Boolean).join(" – "))}" loading="lazy">${i < 9 ? `<em>${i + 1}</em>` : ""}</div>
+        <div class="gl-f">
+          <select class="lp-in" data-gf="cat" aria-label="Kategorie">${Object.entries(GCATS).map(([k, v]) => `<option value="${k}"${p.cat === k ? " selected" : ""}>${v}</option>`).join("")}</select>
+          <input class="lp-in" data-gf="title" value="${esc(p.title)}" maxlength="60" placeholder="Titel, z. B. Stiletto" aria-label="Titel">
+          <input class="lp-in" data-gf="sub" value="${esc(p.sub)}" maxlength="80" placeholder="Beschreibung (optional)" aria-label="Beschreibung">
+        </div>
+        <div class="gl-act">
+          <button type="button" class="lp-btn" data-ga="left" ${i === 0 ? "disabled" : ""} aria-label="Nach vorne">←</button>
+          <button type="button" class="lp-btn" data-ga="right" ${i === n - 1 ? "disabled" : ""} aria-label="Nach hinten">→</button>
+          <button type="button" class="lp-btn danger" data-ga="del">Löschen</button>
+        </div>
+      </div>`).join("") || `<p class="empty">Noch keine Fotos.</p>`;
+  }
+  // Titel/Kategorie speichern, sobald das Feld verlassen wird
+  gl.grid.addEventListener("change", async e => {
+    const card = e.target.closest(".gl-card");
+    if (!card || !e.target.dataset.gf) return;
+    const id = Number(card.dataset.id), p = gl.list.find(x => x.id === id);
+    const data = { id, cat: $('[data-gf="cat"]', card).value, title: $('[data-gf="title"]', card).value.trim(), sub: $('[data-gf="sub"]', card).value.trim() };
+    card.classList.add("is-saving");
+    try { await api("photo_update", data); Object.assign(p, data); toast("Gespeichert"); }
+    catch (x) { if (x.message !== "auth") toast(x.message); }
+    finally { card.classList.remove("is-saving"); }
+  });
+  gl.grid.addEventListener("click", async e => {
+    const b = e.target.closest("[data-ga]"), card = e.target.closest(".gl-card");
+    if (!b || !card) return;
+    const id = Number(card.dataset.id), i = gl.list.findIndex(x => x.id === id);
+    if (b.dataset.ga === "del") {
+      if (!confirm("Dieses Foto von der Website löschen?")) return;
+      try { await api("photo_delete", { id }); gl.list.splice(i, 1); renderGalleryAdmin(); toast("Foto gelöscht"); }
+      catch (x) { if (x.message !== "auth") toast(x.message); }
+      return;
+    }
+    const j = i + (b.dataset.ga === "left" ? -1 : 1);
+    if (j < 0 || j >= gl.list.length) return;
+    [gl.list[i], gl.list[j]] = [gl.list[j], gl.list[i]];
+    renderGalleryAdmin();
+    const moved = $(`.gl-card[data-id="${id}"] [data-ga="${b.dataset.ga}"]`, gl.grid);
+    if (moved && !moved.disabled) moved.focus();
+    try { await api("photo_order", { ids: gl.list.map(x => x.id) }); }
+    catch (x) { if (x.message !== "auth") toast(x.message); loadGallery(); }
+  });
+
+  // Foto im Browser verkleinern: große Version (max. 1400 px) und Vorschau (700 px), WebP oder JPG
+  async function shrinkPhoto(file) {
+    let src;
+    try { src = await createImageBitmap(file, { imageOrientation: "from-image" }); }
+    catch (_) {
+      src = await new Promise((res, rej) => {
+        const img = new Image();
+        img.onload = () => res(img);
+        img.onerror = () => rej(new Error("Dieses Bildformat wird nicht unterstützt. Bitte als JPG speichern."));
+        img.src = URL.createObjectURL(file);
+      });
+    }
+    const W = src.width || src.naturalWidth, H = src.height || src.naturalHeight;
+    if (!W || !H) throw new Error("Bild konnte nicht gelesen werden.");
+    const encode = async (maxW, q, type) => {
+      const sc = Math.min(1, maxW / W), w = Math.round(W * sc), h = Math.round(H * sc);
+      const c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      const g = c.getContext("2d");
+      g.imageSmoothingQuality = "high";
+      g.drawImage(src, 0, 0, w, h);
+      const blob = await new Promise(r => c.toBlob(r, type, q));
+      return { blob, w, h };
+    };
+    // Safari kann kein WebP erzeugen → dann JPG für beide Größen
+    let type = "image/webp";
+    let lg = await encode(1400, .82, type);
+    if (!lg.blob || lg.blob.type !== "image/webp") { type = "image/jpeg"; lg = await encode(1400, .85, type); }
+    if (lg.blob.size > 1_700_000) lg = await encode(1100, .72, type);
+    const sm = await encode(700, .8, type);
+    if (!sm.blob || !lg.blob) throw new Error("Bild konnte nicht umgewandelt werden.");
+    return { sm: sm.blob, lg: lg.blob, w: sm.w, h: sm.h, type };
+  }
+
+  async function uploadFiles(files) {
+    const list = [...files].filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|webp|heic)$/i.test(f.name));
+    if (!list.length) return;
+    if (gl.busy) { toast("Bitte warten, bis der aktuelle Upload fertig ist."); return; }
+    gl.busy = true;
+    const cat = $("[data-gl-newcat]").value;
+    gl.queue.innerHTML = list.map((f, i) => `<li data-q="${i}"><b>${esc(f.name)}</b><span>wartet …</span></li>`).join("");
+    let ok = 0;
+    // rückwärts hochladen: neue Fotos kommen nach vorne, so bleibt die gewählte Reihenfolge erhalten
+    for (let i = list.length - 1; i >= 0; i--) {
+      const li = $(`[data-q="${i}"]`, gl.queue), st = $("span", li);
+      try {
+        st.textContent = "wird verkleinert …";
+        const p = await shrinkPhoto(list[i]);
+        st.textContent = "wird hochgeladen …";
+        const ext = p.type === "image/webp" ? "webp" : "jpg";
+        const fd = new FormData();
+        fd.append("sm", p.sm, `sm.${ext}`); fd.append("lg", p.lg, `lg.${ext}`);
+        fd.append("cat", cat); fd.append("w", p.w); fd.append("h", p.h); fd.append("title", ""); fd.append("sub", "");
+        const res = await fetch("/api/admin/photo", { method: "POST", credentials: "same-origin", headers: { "X-VN": "1" }, body: fd });
+        const j = await res.json().catch(() => ({}));
+        if (res.status === 401) { showAuth(false); return; }
+        if (!res.ok || !j.ok) throw new Error(j.error || "Hochladen fehlgeschlagen.");
+        li.classList.add("is-done"); st.textContent = "✓ fertig"; ok++;
+      } catch (x) { li.classList.add("is-err"); st.textContent = x.message; }
+    }
+    gl.busy = false;
+    $("[data-gl-file]").value = "";
+    if (ok) { toast(`${ok} ${ok === 1 ? "Foto" : "Fotos"} hinzugefügt`); await loadGallery(); }
+    setTimeout(() => { $$(".is-done", gl.queue).forEach(li => li.remove()); }, 4000);
+  }
+  $("[data-gl-file]").addEventListener("change", e => uploadFiles(e.target.files));
+  const drop = $("[data-gl-drop]");
+  ["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("is-over"); }));
+  ["dragleave", "drop"].forEach(t => drop.addEventListener(t, () => drop.classList.remove("is-over")));
+  drop.addEventListener("drop", e => { e.preventDefault(); uploadFiles(e.dataTransfer.files); });
 
   /* ---------------- Leistungen & Preise ---------------- */
   const DURS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 210, 240, 300];

@@ -5,6 +5,7 @@ import {
   handle, json, fail, readJson, db, getSetting, setSetting, rateLimit, hashPassword, verifyPassword, sha256, randomHex,
   clean, validDate, validTime, resolve, busy, fits, toMin, closedDates, bookingOut, newRef, berlinNow, addDays,
   customerKey, priceValue, ensureCustomer, normPhone, getCatalog, validateCatalog, publicCatalog,
+  galleryList, toB64, PHOTO_CATS,
   STATUSES, SOURCES, salon
 } from "../lib.js";
 
@@ -24,7 +25,7 @@ async function startSession(DB) {
     .bind(await sha256(token), Math.floor(Date.now() / 1000) + SESSION_DAYS * 86400).run();
   return cookie(token, SESSION_DAYS * 86400);
 }
-async function isAuthed(DB, request) {
+export async function isAuthed(DB, request) {
   const t = readToken(request);
   if (!t) return false;
   const r = await DB.prepare("SELECT expires FROM sessions WHERE token_hash = ?").bind(await sha256(t)).first();
@@ -265,6 +266,30 @@ export const onRequestPost = handle(async ({ request, env }) => {
       return json({ ok: true, catalog, public: publicCatalog(catalog) });
     }
 
+    case "gallery_list": {
+      return json({ ok: true, photos: await galleryList(DB), cats: PHOTO_CATS });
+    }
+
+    case "photo_update": {
+      const cat = Object.keys(PHOTO_CATS).includes(input.cat) ? input.cat : "elegant";
+      const r = await DB.prepare("UPDATE photos SET cat = ?, title = ?, sub = ? WHERE id = ?")
+        .bind(cat, clean(input.title, 60), clean(input.sub, 80), Number(input.id || 0)).run();
+      if (!r.meta.changes) fail("Foto nicht gefunden.", 404);
+      return json({ ok: true });
+    }
+
+    case "photo_delete": {
+      const id = Number(input.id || 0);
+      await DB.batch([DB.prepare("DELETE FROM photo_data WHERE id = ?").bind(id), DB.prepare("DELETE FROM photos WHERE id = ?").bind(id)]);
+      return json({ ok: true });
+    }
+
+    case "photo_order": {
+      const ids = (Array.isArray(input.ids) ? input.ids : []).map(Number).filter(n => n > 0).slice(0, 300);
+      if (ids.length) await DB.batch(ids.map((id, i) => DB.prepare("UPDATE photos SET sort = ? WHERE id = ?").bind(i + 1, id)));
+      return json({ ok: true });
+    }
+
     case "password": {
       if (!(await verifyPassword(String(input.current || ""), await getSetting(DB, "admin_hash")))) fail("Das aktuelle Passwort ist nicht korrekt.", 401);
       const pw = String(input.new || "");
@@ -279,4 +304,40 @@ export const onRequestPost = handle(async ({ request, env }) => {
     default:
       fail("Unbekannte Aktion.", 404);
   }
+});
+
+/**
+ * POST /api/admin/photo – neues Foto hochladen (multipart: sm, lg, cat, title, sub, w, h).
+ * Die Bilder werden schon im Browser verkleinert; hier nur prüfen und speichern.
+ */
+const MAX_PHOTOS = 200;
+const TYPES = ["image/webp", "image/jpeg"];
+export const onPhotoUpload = handle(async ({ request, env }) => {
+  if (request.headers.get("X-VN") !== "1") fail("Ungültige Anfrage.");
+  if (Number(request.headers.get("Content-Length") || 0) > 3_000_000) fail("Datei zu groß.", 413);
+  const DB = await db(env);
+  if (!(await isAuthed(DB, request))) fail("Bitte anmelden.", 401);
+  let form;
+  try { form = await request.formData(); } catch (_) { fail("Ungültige Datei."); }
+  const sm = form.get("sm"), lg = form.get("lg");
+  if (!sm || !lg || typeof sm === "string" || typeof lg === "string") fail("Bild fehlt.");
+  if (!TYPES.includes(sm.type) || !TYPES.includes(lg.type) || sm.type !== lg.type) fail("Nur JPG oder WebP.");
+  if (sm.size > 600_000 || lg.size > 1_800_000) fail("Bild ist zu groß.", 413);
+  const count = await DB.prepare("SELECT COUNT(*) AS n FROM photos").first();
+  if ((count?.n || 0) >= MAX_PHOTOS) fail(`Maximal ${MAX_PHOTOS} Fotos. Bitte zuerst alte Fotos löschen.`);
+  const [smB, lgB] = [new Uint8Array(await sm.arrayBuffer()), new Uint8Array(await lg.arrayBuffer())];
+  // Kurze Prüfung der Dateisignatur (JPEG: FF D8, WebP: RIFF….WEBP)
+  const ok = b => (b[0] === 0xFF && b[1] === 0xD8) || (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45);
+  if (!ok(smB) || !ok(lgB)) fail("Die Datei ist kein gültiges Bild.");
+  const cat = Object.keys(PHOTO_CATS).includes(String(form.get("cat"))) ? String(form.get("cat")) : "elegant";
+  const w = Math.max(1, Math.min(4000, Number(form.get("w")) || 700)), h = Math.max(1, Math.min(4000, Number(form.get("h")) || 900));
+  const min = await DB.prepare("SELECT COALESCE(MIN(sort), 1) AS s FROM photos").first();
+  const r = await DB.prepare("INSERT INTO photos(sort, cat, title, sub, static, mime, w, h, created_at) VALUES(?,?,?,?,NULL,?,?,?,?)")
+    .bind((min?.s ?? 1) - 1, cat, clean(form.get("title"), 60), clean(form.get("sub"), 80), sm.type, w, h, new Date().toISOString()).run();
+  const id = r.meta.last_row_id;
+  await DB.batch([
+    DB.prepare("INSERT INTO photo_data(id, size, b64) VALUES(?, 'sm', ?)").bind(id, toB64(smB)),
+    DB.prepare("INSERT INTO photo_data(id, size, b64) VALUES(?, 'lg', ?)").bind(id, toB64(lgB))
+  ]);
+  return json({ ok: true, id });
 });

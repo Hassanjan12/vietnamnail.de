@@ -11,7 +11,7 @@
   <link rel="preload" href="../assets/fonts/bodoni-moda-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="../assets/fonts/jost-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../assets/css/fonts.css?v=20261105">
-  <link rel="stylesheet" href="admin.css?v=20261108">
+  <link rel="stylesheet" href="admin.css?v=20261109">
 </head>
 <body>
 
@@ -52,6 +52,7 @@
       <a href="#termine" data-nav="termine"><i class="ic ic-list"></i><span>Termine</span></a>
       <a href="#kunden" data-nav="kunden"><i class="ic ic-users"></i><span>Kunden</span></a>
       <a href="#leistungen" data-nav="leistungen"><i class="ic ic-tag"></i><span>Leistungen</span></a>
+      <a href="#galerie" data-nav="galerie"><i class="ic ic-img"></i><span>Galerie</span></a>
       <a href="#einstellungen" data-nav="einstellungen"><i class="ic ic-gear"></i><span>Einstellungen</span></a>
     </nav>
     <button class="btn btn-light side-new" data-new><span class="plus"></span>Neuer Termin</button>
@@ -279,12 +280,36 @@
       </div>
     </section>
 
+    <!-- GALERIE -->
+    <section class="view" data-view="galerie" hidden>
+      <header class="vh">
+        <div><p class="eyebrow">Website</p><h1>Galerie</h1></div>
+        <div class="gl-tools">
+          <label class="sort"><span>Neue Fotos in</span>
+            <select data-gl-newcat>
+              <option value="elegant">Elegant</option><option value="color">Farbe</option><option value="art">Nail Art</option><option value="lash">Wimpern</option>
+            </select>
+          </label>
+          <label class="btn btn-dark gl-pick"><span class="plus"></span>Fotos hinzufügen
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/*" multiple data-gl-file class="vh-input">
+          </label>
+        </div>
+      </header>
+      <p class="muted small lp-intro">Fotos werden automatisch verkleinert und erscheinen sofort auf der Website – neue Fotos stehen vorne.
+        Titel und Kategorie lassen sich direkt am Foto ändern. <b>Bitte nur Fotos veröffentlichen, mit denen die Kundin einverstanden ist</b>, besonders wenn Gesicht oder Tattoos zu sehen sind.</p>
+      <div class="gl-drop" data-gl-drop>Fotos hierher ziehen</div>
+      <ol class="gl-queue" data-gl-queue></ol>
+      <p class="muted small" data-gl-count></p>
+      <div class="gl-grid" data-gl-grid></div>
+    </section>
+
     <!-- MEHR (mobil) -->
     <section class="view" data-view="mehr" hidden>
       <header class="vh"><div><p class="eyebrow">Admin</p><h1>Mehr</h1></div></header>
       <nav class="more-list" aria-label="Weitere Bereiche">
         <a href="#kunden"><i class="ic ic-users"></i><span>Kunden<small>Kartei, Notizen, Besuche</small></span><i class="ic ic-chev"></i></a>
         <a href="#leistungen"><i class="ic ic-tag"></i><span>Leistungen &amp; Preise<small>Neue Leistungen, Preise ändern</small></span><i class="ic ic-chev"></i></a>
+        <a href="#galerie"><i class="ic ic-img"></i><span>Galerie<small>Fotos hinzufügen und entfernen</small></span><i class="ic ic-chev"></i></a>
         <a href="#einstellungen"><i class="ic ic-gear"></i><span>Einstellungen<small>Passwort, geschlossene Tage, Export</small></span><i class="ic ic-chev"></i></a>
         <a href="../" target="_blank" rel="noopener"><i class="ic ic-home"></i><span>Website ansehen<small>öffnet in neuem Tab</small></span><i class="ic ic-chev"></i></a>
         <button type="button" data-logout-m><i class="ic ic-dots"></i><span>Abmelden</span></button>
@@ -334,7 +359,7 @@
     <a href="#kalender" data-nav="kalender"><i class="ic ic-cal"></i><span>Kalender</span></a>
     <button class="tab-new" data-new aria-label="Neuer Termin"><span class="plus"></span></button>
     <a href="#termine" data-nav="termine"><i class="ic ic-list"></i><span>Termine</span></a>
-    <a href="#mehr" data-nav="mehr" data-nav-also="kunden leistungen einstellungen"><i class="ic ic-dots"></i><span>Mehr</span></a>
+    <a href="#mehr" data-nav="mehr" data-nav-also="kunden leistungen galerie einstellungen"><i class="ic ic-dots"></i><span>Mehr</span></a>
   </nav>
 </div>
 
@@ -433,6 +458,6 @@
 
 <div class="toast" data-toast role="status" aria-live="polite"></div>
 
-<script src="admin.js?v=20261108" defer></script>
+<script src="admin.js?v=20261110" defer></script>
 </body>
 </html>
