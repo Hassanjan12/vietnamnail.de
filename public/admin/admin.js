@@ -108,18 +108,20 @@
   $("[data-logout]").addEventListener("click", async () => { try { await api("logout"); } catch (_) {} showAuth(false); });
 
   /* ---------------- Navigation ---------------- */
-  const VIEWS = ["uebersicht", "kalender", "termine", "einstellungen"];
-  let view = null;
+  const VIEWS = ["uebersicht", "kalender", "termine", "kunden", "einstellungen", "mehr"];
+  let view = null, sub = null;
 
   function route() {
-    const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "uebersicht";
-    view = v;
+    const [h, s2] = location.hash.slice(1).split("/");
+    const v = VIEWS.includes(h) ? h : "uebersicht";
+    view = v; sub = s2 || null;
     $$("[data-view]").forEach(s => { s.hidden = s.dataset.view !== v; });
-    $$("[data-nav]").forEach(a => a.classList.toggle("is-on", a.dataset.nav === v));
+    $$("[data-nav]").forEach(a => a.classList.toggle("is-on", a.dataset.nav === v || (a.dataset.navAlso || "").split(" ").includes(v)));
     if (v === "uebersicht") loadOverview();
     if (v === "kalender") loadCal();
     if (v === "termine") loadList();
     if (v === "einstellungen") { renderSettings(); loadClosed(); }
+    if (v === "kunden") sub ? loadCustomer(Number(sub)) : loadCustomers();
     window.scrollTo(0, 0);
   }
   window.addEventListener("hashchange", () => { if (!appEl.hidden) route(); });
@@ -306,8 +308,134 @@
     if (view === "uebersicht") loadOverview();
     if (view === "kalender") loadCal();
     if (view === "termine") loadList();
+    if (view === "kunden") sub ? loadCustomer(Number(sub)) : loadCustomers();
     if (view !== "uebersicht") checkNew();
   }
+
+  /* ---------------- Kunden ---------------- */
+  const custState = { q: "", sort: "last" };
+  const custNo = id => 1000 + Number(id);
+  const initials = n => String(n || "?").trim().split(/\s+/).slice(0, 2).map(w => w[0] || "").join("").toUpperCase();
+  const fmtDate = s => { if (!s) return "–"; const d = parse(s.slice(0, 10)); return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`; };
+  const whenText = (date, time) => `${relDay(date) || fmtDate(date)} · ${nice(time)}`;
+  let custTimer;
+  $("[data-cust-search]").addEventListener("input", e => { custState.q = e.target.value.trim(); clearTimeout(custTimer); custTimer = setTimeout(loadCustomers, 250); });
+  $("[data-cust-sort]").addEventListener("change", e => { custState.sort = e.target.value; loadCustomers(); });
+
+  async function loadCustomers() {
+    $("[data-cust-list-wrap]").hidden = false;
+    $("[data-cust-detail]").hidden = true;
+    const req = custState.req = (custState.req || 0) + 1;
+    try {
+      const r = await api("customers", { q: custState.q, sort: custState.sort });
+      if (req !== custState.req) return;
+      const list = r.customers, el = $("[data-cust-list]");
+      $("[data-cust-count]").textContent = `${list.length} ${list.length === 1 ? "Kundin" : "Kundinnen"}${custState.q ? " gefunden" : ""}`;
+      if (!list.length) {
+        el.innerHTML = `<p class="empty">${custState.q ? "Keine Kundin gefunden." : "Noch keine Kundinnen – sie erscheinen automatisch mit dem ersten Termin."}</p>`;
+        return;
+      }
+      el.innerHTML = `<div class="crow crow-h"><span></span><span>Name</span><span class="c-hide-m">Letzter Besuch</span><span class="c-hide-m c-hide-t">Nächster Termin</span><span class="c-hide-m" style="text-align:right">Besuche</span><span style="text-align:right">Umsatz ca.</span><span></span></div>`
+        + list.map(c => {
+          const next = c.next_at ? whenText(...c.next_at.split(" ")) : "–";
+          return `<a class="crow" href="#kunden/${c.id}">
+            <span class="c-av">${esc(initials(c.name))}</span>
+            <span class="c-name">${esc(c.name)}${c.noshow ? `<i class="c-tag">${c.noshow}× nicht da</i>` : ""}<small>${esc(c.phone || "ohne Telefon")} · Nr. ${custNo(c.id)}</small></span>
+            <span class="c-col c-hide-m">${fmtDate(c.last_visit)}<small>Kundin seit ${fmtDate(c.first_date)}</small></span>
+            <span class="c-col c-hide-m c-hide-t">${next}</span>
+            <span class="c-num c-hide-m">${c.visits}</span>
+            <span class="c-num">${c.revenue} €</span>
+            <i class="ic ic-chev c-chev"></i>
+          </a>`;
+        }).join("");
+    } catch (e) { if (e.message !== "auth") toast(e.message); }
+  }
+
+  let custCur = null;
+  async function loadCustomer(id) {
+    $("[data-cust-list-wrap]").hidden = true;
+    $("[data-cust-detail]").hidden = false;
+    try {
+      const r = await api("customer", { id });
+      const bs = r.bookings;
+      cache(bs);
+      const t0 = ymd(today());
+      const gone = b => ["cancelled", "noshow"].includes(b.status);
+      const happened = bs.filter(b => (b.date < t0 || b.status === "done") && !gone(b)); // nur Vergangenes oder Erledigtes
+      const upcoming = bs.filter(b => b.date >= t0 && ["pending", "confirmed"].includes(b.status)).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+      const noshow = bs.filter(b => b.status === "noshow").length, cancelled = bs.filter(b => b.status === "cancelled").length;
+      const revenue = happened.reduce((s, b) => s + (Number(b.price_value) || 0), 0);
+      // häufigste Schreibweise von Name und Telefonnummer anzeigen
+      const mostCommon = vals => { const c = {}; vals.filter(Boolean).forEach(v => { c[v] = (c[v] || 0) + 1; }); return Object.keys(c).sort((x, y) => c[y] - c[x] || (y !== y.toLowerCase()) - (x !== x.toLowerCase()))[0] || ""; };
+      custCur = { id: r.customer.id, name: mostCommon(bs.map(b => b.name)), phone: mostCommon(bs.map(b => b.phone)) };
+
+      $("[data-cd-no]").textContent = `Kundennummer ${custNo(custCur.id)}`;
+      $("[data-cd-name]").textContent = custCur.name;
+      $("[data-cd-phone]").textContent = custCur.phone || "Keine Telefonnummer hinterlegt";
+      const call = $("[data-cd-call]"), wa = $("[data-cd-wa]");
+      call.href = custCur.phone ? `tel:${custCur.phone.replace(/[^\d+]/g, "")}` : "#";
+      wa.href = custCur.phone ? `https://wa.me/${waNumber(custCur.phone)}` : "#";
+      call.setAttribute("aria-disabled", String(!custCur.phone));
+      wa.setAttribute("aria-disabled", String(!custCur.phone));
+
+      const visits = bs.filter(b => !gone(b)).length;
+      const last = happened.length ? happened[0].date : null;
+      const tiles = [
+        ["Besuche", `${visits}`, noshow || cancelled ? `${noshow ? `${noshow}× nicht erschienen` : ""}${noshow && cancelled ? " · " : ""}${cancelled ? `${cancelled}× storniert` : ""}` : "bisher alle wahrgenommen"],
+        ["Umsatz ca.", `${revenue}<small>€</small>`, "Listenpreise, ungefähr"],
+        ["Erster Termin", fmtDate(bs.length ? bs[bs.length - 1].date : null), ""],
+        ["Letzter Besuch", last ? fmtDate(last) : "–", last ? (relDay(last) || "") : "noch kein Besuch"],
+        ["Nächster Termin", upcoming[0] ? fmtDate(upcoming[0].date) : "–", upcoming[0] ? `${nice(upcoming[0].time)} Uhr · ${esc(upcoming[0].title)}` : "keiner geplant"],
+        ["Termine gesamt", `${bs.length}`, `${upcoming.length} anstehend`]
+      ];
+      $("[data-cd-stats]").innerHTML = tiles.map(([k, v, s], i) => `<div class="tile${i === 0 ? " tile-dark" : ""}"><span class="tile-k">${k}</span><b class="tile-v">${v}</b><span class="tile-s">${s}</span></div>`).join("");
+
+      const note = $("[data-cd-note]");
+      note.value = r.customer.note || "";
+      note.dataset.saved = note.value;
+      $("[data-cd-note-state]").textContent = r.customer.note ? "" : "Noch keine Notiz";
+
+      // Lieblingsleistungen: wie oft jede Leistung gebucht wurde (ohne Storno)
+      const counts = {};
+      bs.filter(b => !gone(b)).forEach(b => {
+        const names = b.services.length ? b.services.map(id => items[id]?.name || id) : [b.title];
+        names.forEach(n => { counts[n] = (counts[n] || 0) + 1; });
+      });
+      const top = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      $("[data-cd-top]").innerHTML = top.length ? top.map(([n, c]) => `<li><b>${esc(n)}</b><span>${c}×</span></li>`).join("") : `<li class="muted">Noch keine Besuche</li>`;
+
+      $("[data-cd-count]").textContent = `${bs.length} ${bs.length === 1 ? "Termin" : "Termine"}`;
+      $("[data-cd-bookings]").innerHTML = bs.length ? bs.map(b => `
+        <button class="brow" data-open="${b.id}">
+          <span class="brow-time">${fmtDate(b.date)}<small>${nice(b.time)} Uhr</small></span>
+          <span class="brow-name">${esc(b.title)}<small>${esc(b.price || "")}</small></span>
+          <span class="brow-svc">${SOURCE[b.source] || ""}</span>
+          <span class="pill pill-${b.status}">${STATUS[b.status]}</span>
+          <span class="brow-src">${b.ref}</span>
+        </button>`).join("") : `<p class="empty">Keine Termine.</p>`;
+      window.scrollTo(0, 0);
+    } catch (e) {
+      if (e.message === "auth") return;
+      toast(e.message);
+      if (e.status === 404) location.hash = "kunden";
+    }
+  }
+
+  $("[data-cd-note-save]").addEventListener("click", async () => {
+    if (!custCur) return;
+    const note = $("[data-cd-note]"), state = $("[data-cd-note-state]");
+    try {
+      await api("customer_note", { id: custCur.id, note: note.value });
+      note.dataset.saved = note.value;
+      state.textContent = "Gespeichert";
+      toast("Notiz gespeichert");
+    } catch (e) { if (e.message !== "auth") toast(e.message); }
+  });
+  $("[data-cd-note]").addEventListener("input", e => {
+    $("[data-cd-note-state]").textContent = e.target.value !== e.target.dataset.saved ? "Nicht gespeichert" : "Gespeichert";
+  });
+  $("[data-cd-new]").addEventListener("click", () => { if (custCur) openForm(null, { name: custCur.name, phone: custCur.phone }); });
+  $("[data-logout-m]").addEventListener("click", () => $("[data-logout]").click());
 
   /* ---------------- Kalender ---------------- */
   const cal = { mode: window.innerWidth < 900 ? "day" : "week", anchor: today(), list: [] };
@@ -701,6 +829,15 @@
     openDrawer(current);
   });
   $("[data-dr-edit]").addEventListener("click", () => { const b = current; closeDrawer(); openForm(b); });
+  $("[data-dr-customer]").addEventListener("click", async () => {
+    if (!current) return;
+    try {
+      const r = await api("customer", { bookingId: current.id });
+      closeDrawer();
+      const target = `kunden/${r.customer.id}`;
+      if (location.hash.slice(1) === target) route(); else location.hash = target;
+    } catch (e) { if (e.message !== "auth") toast(e.message); }
+  });
   $("[data-dr-delete]").addEventListener("click", async () => {
     if (!current || !confirm(`Termin von ${current.name} endgültig löschen?\n\nTipp: „Stornieren“ behält den Eintrag in der Liste.`)) return;
     try { await api("delete", { id: current.id }); toast("Termin gelöscht"); closeDrawer(); refresh(); } catch (e) { toast(e.message); }
@@ -760,8 +897,8 @@
     fm.status = b && b.status !== "pending" ? b.status : "confirmed";
     fm.durTouched = !!b;
     $("[data-fm-title]").textContent = b ? "Termin bearbeiten" : "Neuer Termin";
-    form.name.value = b ? b.name : "";
-    form.phone.value = b ? b.phone : "";
+    form.name.value = b ? b.name : (prefill.name || "");
+    form.phone.value = b ? b.phone : (prefill.phone || "");
     form.note.value = b ? b.note : "";
     form.title.value = b && !b.services.length ? b.title : "";
     const now = new Date();

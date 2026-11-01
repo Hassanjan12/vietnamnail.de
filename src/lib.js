@@ -101,14 +101,59 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS settings (k TEXT PRIMARY KEY, v TEXT NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS hits (k TEXT NOT NULL, ts INTEGER NOT NULL)`,
   `CREATE INDEX IF NOT EXISTS idx_hits ON hits(k, ts)`,
-  `CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, expires INTEGER NOT NULL)`
+  `CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, expires INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS customers (id INTEGER PRIMARY KEY AUTOINCREMENT, ckey TEXT UNIQUE NOT NULL,
+    note TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL)`
 ];
+
+/* ---------- Kunden ---------- */
+
+/** Telefonnummer vereinheitlichen: nur Ziffern, deutsche Vorwahl (0170… → 49170…) */
+export function normPhone(p) {
+  let d = String(p || "").replace(/[^\d+]/g, "");
+  if (d.startsWith("+")) d = d.slice(1);
+  else if (d.startsWith("00")) d = d.slice(2);
+  else if (d.startsWith("0")) d = "49" + d.slice(1);
+  return d.replace(/\D/g, "");
+}
+/** Eine Kundin = gleicher Name + gleiche Telefonnummer (Groß-/Kleinschreibung und Leerzeichen egal) */
+export const customerKey = (name, phone) =>
+  `${normPhone(phone)}|${String(name || "").normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim()}`;
+/** Preis als Zahl für die (ungefähre) Umsatzsumme: erste Zahl im Preistext, z. B. „ab 38 €“ → 38 */
+export const priceValue = text => { const m = String(text || "").match(/\d+/); return m ? Number(m[0]) : 0; };
+export const ensureCustomer = (DB, key) =>
+  // NOT EXISTS verhindert Lücken in den Kundennummern, OR IGNORE schützt vor Fehlern bei gleichzeitigen Buchungen
+  DB.prepare("INSERT OR IGNORE INTO customers(ckey, created_at) SELECT ?1, ?2 WHERE NOT EXISTS (SELECT 1 FROM customers WHERE ckey = ?1)")
+    .bind(key, new Date().toISOString());
+
+/** Spalten für Kunden nachrüsten und bestehende Termine einmalig zuordnen */
+async function migrate(DB) {
+  const { results: cols } = await DB.prepare("PRAGMA table_info(bookings)").all();
+  const has = n => cols.some(c => c.name === n);
+  const alter = [];
+  if (!has("customer_key")) alter.push(DB.prepare("ALTER TABLE bookings ADD COLUMN customer_key TEXT"));
+  if (!has("price_value")) alter.push(DB.prepare("ALTER TABLE bookings ADD COLUMN price_value INTEGER NOT NULL DEFAULT 0"));
+  if (alter.length) await DB.batch(alter);
+  await DB.prepare("CREATE INDEX IF NOT EXISTS idx_bookings_customer ON bookings(customer_key)").run();
+  for (let round = 0; round < 20; round++) {
+    const { results } = await DB.prepare("SELECT id, name, phone, price FROM bookings WHERE customer_key IS NULL LIMIT 200").all();
+    if (!results.length) break;
+    const stmts = [];
+    for (const r of results) {
+      const k = customerKey(r.name, r.phone);
+      stmts.push(DB.prepare("UPDATE bookings SET customer_key = ?, price_value = ? WHERE id = ?").bind(k, priceValue(r.price), r.id));
+      stmts.push(ensureCustomer(DB, k));
+    }
+    await DB.batch(stmts);
+  }
+}
 let ready = null;
 
 export async function db(env) {
   if (!ready) {
     ready = (async () => {
       await env.DB.batch(SCHEMA.map(s => env.DB.prepare(s)));
+      await migrate(env.DB);
       await cleanup(env.DB);
     })().catch(e => { ready = null; throw e; });
   }
@@ -135,7 +180,9 @@ async function cleanup(DB) {
     DB.prepare("DELETE FROM bookings WHERE date < ?").bind(addDays(today, -365)),
     DB.prepare("DELETE FROM pageviews WHERE day < ?").bind(addDays(today, -426)),
     DB.prepare("DELETE FROM sessions WHERE expires < ?").bind(now),
-    DB.prepare("DELETE FROM hits WHERE ts < ?").bind(now - 86400)
+    DB.prepare("DELETE FROM hits WHERE ts < ?").bind(now - 86400),
+    // Kundenkarten ohne verbleibende Termine entfernen (gleiche 12-Monats-Frist)
+    DB.prepare("DELETE FROM customers WHERE ckey NOT IN (SELECT customer_key FROM bookings WHERE customer_key IS NOT NULL)")
   ]);
 }
 
@@ -227,8 +274,8 @@ export function newRef() {
  * Die höchste Belegung liegt immer am eigenen Beginn oder am Beginn eines anderen Termins im Zeitraum.
  */
 export async function insertIfFree(DB, b, cap) {
-  const sql = `INSERT INTO bookings (ref, status, source, name, phone, services, extras, title, date, time, start_min, duration, price, note, visit, created_at, updated_at)
-    SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?16
+  const sql = `INSERT INTO bookings (ref, status, source, name, phone, services, extras, title, date, time, start_min, duration, price, note, visit, created_at, updated_at, customer_key, price_value)
+    SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?16, ?18, ?19
     WHERE NOT EXISTS (
       SELECT 1 FROM (
         SELECT ?11 AS p
@@ -238,7 +285,9 @@ export async function insertIfFree(DB, b, cap) {
              AND x.start_min <= pts.p AND x.start_min + x.duration > pts.p) >= ?17
     )`;
   const r = await DB.prepare(sql).bind(b.ref, b.status, b.source, b.name, b.phone, JSON.stringify(b.services), JSON.stringify(b.extras),
-    b.title, b.date, b.time, toMin(b.time), b.duration, b.price, b.note, b.visit, new Date().toISOString(), cap).run();
+    b.title, b.date, b.time, toMin(b.time), b.duration, b.price, b.note, b.visit, new Date().toISOString(), cap,
+    customerKey(b.name, b.phone), priceValue(b.price)).run();
+  if (r.meta.changes === 1) await ensureCustomer(DB, customerKey(b.name, b.phone)).run();
   return r.meta.changes === 1;
 }
 

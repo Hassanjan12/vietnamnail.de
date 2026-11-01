@@ -4,6 +4,7 @@
 import {
   handle, json, fail, readJson, db, getSetting, setSetting, rateLimit, hashPassword, verifyPassword, sha256, randomHex,
   clean, validDate, validTime, resolve, busy, fits, toMin, closedDates, bookingOut, newRef, berlinNow, addDays,
+  customerKey, priceValue, ensureCustomer, normPhone,
   STATUSES, SOURCES, salon
 } from "../lib.js";
 
@@ -122,13 +123,21 @@ export const onRequestPost = handle(async ({ request, env }) => {
       const now = new Date().toISOString();
       let newId = id;
       if (id) {
-        await DB.prepare(`UPDATE bookings SET status=?, source=?, name=?, phone=?, services=?, extras=?, title=?, date=?, time=?, start_min=?,
-          duration=?, price=?, note=?, updated_at=? WHERE id=?`)
-          .bind(status, source, name, phone, JSON.stringify(svc.ids), JSON.stringify(svc.extras), title, date, time, toMin(time), duration, price, note, now, id).run();
+        await DB.batch([
+          DB.prepare(`UPDATE bookings SET status=?, source=?, name=?, phone=?, services=?, extras=?, title=?, date=?, time=?, start_min=?,
+            duration=?, price=?, note=?, updated_at=?, customer_key=?, price_value=? WHERE id=?`)
+            .bind(status, source, name, phone, JSON.stringify(svc.ids), JSON.stringify(svc.extras), title, date, time, toMin(time), duration, price, note, now,
+              customerKey(name, phone), priceValue(price), id),
+          ensureCustomer(DB, customerKey(name, phone))
+        ]);
       } else {
-        const r = await DB.prepare(`INSERT INTO bookings(ref, status, source, name, phone, services, extras, title, date, time, start_min, duration, price, note, visit, created_at, updated_at)
-          VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-          .bind(newRef(), status, source, name, phone, JSON.stringify(svc.ids), JSON.stringify(svc.extras), title, date, time, toMin(time), duration, price, note, "", now, now).run();
+        const [r] = await DB.batch([
+          DB.prepare(`INSERT INTO bookings(ref, status, source, name, phone, services, extras, title, date, time, start_min, duration, price, note, visit, created_at, updated_at, customer_key, price_value)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+            .bind(newRef(), status, source, name, phone, JSON.stringify(svc.ids), JSON.stringify(svc.extras), title, date, time, toMin(time), duration, price, note, "", now, now,
+              customerKey(name, phone), priceValue(price)),
+          ensureCustomer(DB, customerKey(name, phone))
+        ]);
         newId = r.meta.last_row_id;
       }
       const row = await DB.prepare("SELECT * FROM bookings WHERE id = ?").bind(newId).first();
@@ -198,6 +207,52 @@ export const onRequestPost = handle(async ({ request, env }) => {
       const cell = v => { let s = String(v ?? ""); if (/^[=+\-@]/.test(s)) s = "'" + s; return `"${s.replace(/"/g, '""')}"`; };
       const csv = "﻿" + [head, ...results.map(r => Object.values(r))].map(row => row.map(cell).join(";")).join("\r\n") + "\r\n";
       return json({ ok: true, csv, count: results.length });
+    }
+
+    case "customers": {
+      // Kundenliste: alles in einer Abfrage zusammengefasst (Name/Telefon aus dem jüngsten Termin)
+      const q = clean(input.q, 60);
+      const like = `%${q.replace(/[\\%_]/g, c => "\\" + c)}%`;
+      const order = { last: "last_visit DESC NULLS LAST, c.id DESC", visits: "visits DESC, last_visit DESC", revenue: "revenue DESC, visits DESC", name: "name COLLATE NOCASE ASC", next: "next_at IS NULL, next_at ASC" }[String(input.sort)] || "last_visit DESC NULLS LAST, c.id DESC";
+      const { results } = await DB.prepare(`
+        SELECT c.id, c.note,
+          (SELECT name FROM bookings x WHERE x.customer_key = c.ckey GROUP BY name ORDER BY COUNT(*) DESC, (name != lower(name)) DESC, MAX(date) DESC LIMIT 1) AS name,
+          (SELECT phone FROM bookings x WHERE x.customer_key = c.ckey AND phone != '' GROUP BY phone ORDER BY COUNT(*) DESC, MAX(date) DESC LIMIT 1) AS phone,
+          COUNT(b.id) AS total,
+          SUM(CASE WHEN b.status IN ('cancelled','noshow') THEN 0 ELSE 1 END) AS visits,
+          SUM(CASE WHEN b.status = 'noshow' THEN 1 ELSE 0 END) AS noshow,
+          MIN(b.date) AS first_date,
+          MAX(CASE WHEN (b.date < ?1 OR b.status = 'done') AND b.status NOT IN ('cancelled','noshow') THEN b.date END) AS last_visit,
+          MIN(CASE WHEN b.date >= ?1 AND b.status IN ('pending','confirmed') THEN b.date || ' ' || b.time END) AS next_at,
+          SUM(CASE WHEN (b.date < ?1 OR b.status = 'done') AND b.status NOT IN ('cancelled','noshow') THEN b.price_value ELSE 0 END) AS revenue
+        FROM customers c JOIN bookings b ON b.customer_key = c.ckey
+        WHERE ?2 = '' OR c.ckey IN (SELECT customer_key FROM bookings WHERE name LIKE ?3 ESCAPE '\\' OR phone LIKE ?3 ESCAPE '\\' OR ref LIKE ?3 ESCAPE '\\')
+           OR CAST(c.id + 1000 AS TEXT) = ?2
+           OR (?4 != '' AND substr(c.ckey, 1, instr(c.ckey, '|') - 1) LIKE '%' || ?4 || '%')
+        GROUP BY c.id
+        ORDER BY ${order}
+        LIMIT 500`).bind(today, q, like, (q.replace(/\D/g, "").length >= 3 ? normPhone(q) : "")).all();
+      return json({ ok: true, customers: results });
+    }
+
+    case "customer": {
+      // Kundenkarte: per Kunden-ID oder über einen Termin (Link aus der Terminansicht)
+      let c = null;
+      if (input.bookingId) {
+        const b = await DB.prepare("SELECT customer_key FROM bookings WHERE id = ?").bind(Number(input.bookingId)).first();
+        if (b) c = await DB.prepare("SELECT * FROM customers WHERE ckey = ?").bind(b.customer_key).first();
+      } else {
+        c = await DB.prepare("SELECT * FROM customers WHERE id = ?").bind(Number(input.id || 0)).first();
+      }
+      if (!c) fail("Kundin nicht gefunden.", 404);
+      const { results } = await DB.prepare("SELECT * FROM bookings WHERE customer_key = ? ORDER BY date DESC, time DESC").bind(c.ckey).all();
+      return json({ ok: true, customer: { id: c.id, note: c.note, created_at: c.created_at }, bookings: results.map(bookingOut) });
+    }
+
+    case "customer_note": {
+      const r = await DB.prepare("UPDATE customers SET note = ? WHERE id = ?").bind(clean(input.note, 2000), Number(input.id || 0)).run();
+      if (!r.meta.changes) fail("Kundin nicht gefunden.", 404);
+      return json({ ok: true });
     }
 
     case "password": {

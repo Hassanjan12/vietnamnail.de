@@ -11,7 +11,7 @@
   <link rel="preload" href="../assets/fonts/bodoni-moda-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="../assets/fonts/jost-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../assets/css/fonts.css?v=20261105">
-  <link rel="stylesheet" href="admin.css?v=20261106">
+  <link rel="stylesheet" href="admin.css?v=20261107">
 </head>
 <body>
 
@@ -50,6 +50,7 @@
       <a href="#uebersicht" data-nav="uebersicht"><i class="ic ic-home"></i><span>Übersicht</span><b class="badge" data-badge hidden></b></a>
       <a href="#kalender" data-nav="kalender"><i class="ic ic-cal"></i><span>Kalender</span></a>
       <a href="#termine" data-nav="termine"><i class="ic ic-list"></i><span>Termine</span></a>
+      <a href="#kunden" data-nav="kunden"><i class="ic ic-users"></i><span>Kunden</span></a>
       <a href="#einstellungen" data-nav="einstellungen"><i class="ic ic-gear"></i><span>Einstellungen</span></a>
     </nav>
     <button class="btn btn-light side-new" data-new><span class="plus"></span>Neuer Termin</button>
@@ -201,6 +202,77 @@
     </section>
 
     <!-- EINSTELLUNGEN -->
+    <!-- KUNDEN -->
+    <section class="view" data-view="kunden" hidden>
+      <div data-cust-list-wrap>
+        <header class="vh">
+          <div><p class="eyebrow">Kartei</p><h1>Kunden</h1></div>
+          <p class="muted small" data-cust-count></p>
+        </header>
+        <div class="list-tools">
+          <label class="search">
+            <i class="ic ic-search"></i>
+            <input type="search" placeholder="Name, Telefon oder Kundennummer suchen" data-cust-search>
+          </label>
+          <label class="sort">
+            <span>Sortieren</span>
+            <select data-cust-sort>
+              <option value="last">Zuletzt da</option>
+              <option value="next">Nächster Termin</option>
+              <option value="visits">Meiste Besuche</option>
+              <option value="revenue">Höchster Umsatz</option>
+              <option value="name">Name A–Z</option>
+            </select>
+          </label>
+        </div>
+        <div class="ctable" data-cust-list></div>
+        <p class="muted small cnote">Kundinnen werden über Name und Telefonnummer erkannt. Umsatz ist ein Circa-Wert aus den Listenpreisen vergangener Termine (ohne Storno und nicht erschienen).</p>
+      </div>
+
+      <div class="cdetail" data-cust-detail hidden>
+        <a href="#kunden" class="back-btn">← Alle Kunden</a>
+        <header class="vh">
+          <div>
+            <p class="eyebrow" data-cd-no></p>
+            <h1 data-cd-name></h1>
+            <p class="cd-phone" data-cd-phone></p>
+          </div>
+          <div class="cd-actions">
+            <a class="btn btn-line" data-cd-call>Anrufen</a>
+            <a class="btn btn-line" data-cd-wa target="_blank" rel="noopener">WhatsApp</a>
+            <button class="btn btn-dark" data-cd-new><span class="plus"></span>Neuer Termin</button>
+          </div>
+        </header>
+        <div class="tiles tiles-6" data-cd-stats></div>
+        <div class="ov-grid">
+          <div class="card">
+            <div class="card-h"><h2>Interne Notiz</h2><span class="muted small">nur im Admin sichtbar</span></div>
+            <textarea class="cd-note" data-cd-note rows="5" maxlength="2000" placeholder="z. B. Lieblingsform, Farbe, Allergien, Wünsche …"></textarea>
+            <div class="cd-note-f"><span class="muted small" data-cd-note-state></span><button class="btn btn-dark btn-sm" data-cd-note-save>Notiz speichern</button></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><h2>Lieblingsleistungen</h2></div>
+            <ol class="rank" data-cd-top></ol>
+          </div>
+          <div class="card card-wide">
+            <div class="card-h"><h2>Alle Termine</h2><span class="muted small" data-cd-count></span></div>
+            <div class="bgroup-rows cd-rows" data-cd-bookings></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MEHR (mobil) -->
+    <section class="view" data-view="mehr" hidden>
+      <header class="vh"><div><p class="eyebrow">Admin</p><h1>Mehr</h1></div></header>
+      <nav class="more-list" aria-label="Weitere Bereiche">
+        <a href="#kunden"><i class="ic ic-users"></i><span>Kunden<small>Kartei, Notizen, Besuche</small></span><i class="ic ic-chev"></i></a>
+        <a href="#einstellungen"><i class="ic ic-gear"></i><span>Einstellungen<small>Passwort, geschlossene Tage, Export</small></span><i class="ic ic-chev"></i></a>
+        <a href="../" target="_blank" rel="noopener"><i class="ic ic-home"></i><span>Website ansehen<small>öffnet in neuem Tab</small></span><i class="ic ic-chev"></i></a>
+        <button type="button" data-logout-m><i class="ic ic-dots"></i><span>Abmelden</span></button>
+      </nav>
+    </section>
+
     <section class="view" data-view="einstellungen" hidden>
       <header class="vh">
         <div><p class="eyebrow">Konto &amp; Studio</p><h1>Einstellungen</h1></div>
@@ -244,7 +316,7 @@
     <a href="#kalender" data-nav="kalender"><i class="ic ic-cal"></i><span>Kalender</span></a>
     <button class="tab-new" data-new aria-label="Neuer Termin"><span class="plus"></span></button>
     <a href="#termine" data-nav="termine"><i class="ic ic-list"></i><span>Termine</span></a>
-    <a href="#einstellungen" data-nav="einstellungen"><i class="ic ic-gear"></i><span>Mehr</span></a>
+    <a href="#mehr" data-nav="mehr" data-nav-also="kunden einstellungen"><i class="ic ic-dots"></i><span>Mehr</span></a>
   </nav>
 </div>
 
@@ -264,6 +336,7 @@
       <a class="btn btn-line" data-dr-wa target="_blank" rel="noopener">WhatsApp</a>
     </div>
     <dl class="kv" data-dr-kv></dl>
+    <button class="btn btn-line btn-block" data-dr-customer>Kundenkarte öffnen</button>
     <div class="dr-status">
       <p class="eyebrow">Status ändern</p>
       <div class="chips chips-status" data-dr-statusbtns>
@@ -342,6 +415,6 @@
 
 <div class="toast" data-toast role="status" aria-live="polite"></div>
 
-<script src="admin.js?v=20261106" defer></script>
+<script src="admin.js?v=20261107" defer></script>
 </body>
 </html>
