@@ -11,7 +11,7 @@
   <link rel="preload" href="../assets/fonts/bodoni-moda-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="../assets/fonts/jost-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../assets/css/fonts.css?v=20261105">
-  <link rel="stylesheet" href="admin.css?v=20261107">
+  <link rel="stylesheet" href="admin.css?v=20261108">
 </head>
 <body>
 
@@ -51,6 +51,7 @@
       <a href="#kalender" data-nav="kalender"><i class="ic ic-cal"></i><span>Kalender</span></a>
       <a href="#termine" data-nav="termine"><i class="ic ic-list"></i><span>Termine</span></a>
       <a href="#kunden" data-nav="kunden"><i class="ic ic-users"></i><span>Kunden</span></a>
+      <a href="#leistungen" data-nav="leistungen"><i class="ic ic-tag"></i><span>Leistungen</span></a>
       <a href="#einstellungen" data-nav="einstellungen"><i class="ic ic-gear"></i><span>Einstellungen</span></a>
     </nav>
     <button class="btn btn-light side-new" data-new><span class="plus"></span>Neuer Termin</button>
@@ -262,11 +263,28 @@
       </div>
     </section>
 
+    <!-- LEISTUNGEN & PREISE -->
+    <section class="view" data-view="leistungen" hidden>
+      <header class="vh">
+        <div><p class="eyebrow">Website &amp; Buchung</p><h1>Leistungen &amp; Preise</h1></div>
+        <button class="btn btn-line" data-cat-addcat><span class="plus"></span>Kategorie</button>
+      </header>
+      <p class="muted small lp-intro">Änderungen erscheinen nach dem Speichern sofort auf der Website und in der Online-Buchung. Bereits gebuchte Termine behalten ihren Preis.
+        <b>Tipp:</b> Leistungen lieber <em>ausblenden</em> statt löschen.</p>
+      <div data-cat-editor></div>
+      <div class="savebar" data-cat-savebar hidden>
+        <span data-cat-state>Ungespeicherte Änderungen</span>
+        <button class="btn btn-line btn-sm" data-cat-reset>Verwerfen</button>
+        <button class="btn btn-light btn-sm" data-cat-save>Speichern</button>
+      </div>
+    </section>
+
     <!-- MEHR (mobil) -->
     <section class="view" data-view="mehr" hidden>
       <header class="vh"><div><p class="eyebrow">Admin</p><h1>Mehr</h1></div></header>
       <nav class="more-list" aria-label="Weitere Bereiche">
         <a href="#kunden"><i class="ic ic-users"></i><span>Kunden<small>Kartei, Notizen, Besuche</small></span><i class="ic ic-chev"></i></a>
+        <a href="#leistungen"><i class="ic ic-tag"></i><span>Leistungen &amp; Preise<small>Neue Leistungen, Preise ändern</small></span><i class="ic ic-chev"></i></a>
         <a href="#einstellungen"><i class="ic ic-gear"></i><span>Einstellungen<small>Passwort, geschlossene Tage, Export</small></span><i class="ic ic-chev"></i></a>
         <a href="../" target="_blank" rel="noopener"><i class="ic ic-home"></i><span>Website ansehen<small>öffnet in neuem Tab</small></span><i class="ic ic-chev"></i></a>
         <button type="button" data-logout-m><i class="ic ic-dots"></i><span>Abmelden</span></button>
@@ -304,7 +322,7 @@
         <div class="card">
           <h2>Studio-Daten</h2>
           <dl class="kv" data-salon-info></dl>
-          <p class="muted small">Öffnungszeiten, Leistungen, Preise und Plätze werden in der Datei <code>assets/salon.json</code> gepflegt und gelten für Website und Admin gleichzeitig.</p>
+          <p class="muted small">Leistungen und Preise bearbeiten Sie unter <a href="#leistungen">Leistungen &amp; Preise</a>. Öffnungszeiten und Plätze werden vom Entwickler in <code>assets/salon.json</code> gepflegt.</p>
         </div>
       </div>
     </section>
@@ -316,7 +334,7 @@
     <a href="#kalender" data-nav="kalender"><i class="ic ic-cal"></i><span>Kalender</span></a>
     <button class="tab-new" data-new aria-label="Neuer Termin"><span class="plus"></span></button>
     <a href="#termine" data-nav="termine"><i class="ic ic-list"></i><span>Termine</span></a>
-    <a href="#mehr" data-nav="mehr" data-nav-also="kunden einstellungen"><i class="ic ic-dots"></i><span>Mehr</span></a>
+    <a href="#mehr" data-nav="mehr" data-nav-also="kunden leistungen einstellungen"><i class="ic ic-dots"></i><span>Mehr</span></a>
   </nav>
 </div>
 
@@ -415,6 +433,6 @@
 
 <div class="toast" data-toast role="status" aria-live="polite"></div>
 
-<script src="admin.js?v=20261107" defer></script>
+<script src="admin.js?v=20261108" defer></script>
 </body>
 </html>

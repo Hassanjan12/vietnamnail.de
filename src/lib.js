@@ -241,24 +241,91 @@ export function freeSlots(date, dur, busyList, closed) {
   return starts.filter(m => m >= earliest && m + dur <= c && fits(busyList, m, dur, cap)).map(toHM);
 }
 
-/** Leistungen aus dem Katalog auflösen → Titel, Dauer, Preistext */
-export function resolve(serviceIds, extraIds) {
+/* ---------- Leistungen & Preise (im Admin bearbeitbar) ---------- */
+
+/** Preistext einer Leistung: „33 €“, „ab 29 €“ oder „auf Anfrage“ */
+export const itemPrice = i => (i.price === null || i.price === undefined || i.price === "") ? "auf Anfrage" : `${i.from ? "ab " : ""}${i.price} €`;
+/** Preistext eines Extras: „+5 €“, „+3–10 €“ oder „ab 10 €“ */
+export const extraLabel = x => x.from ? `ab ${x.min} €` : (x.max ? `+${x.min}–${x.max} €` : `+${x.min} €`);
+
+/** Gespeicherter Katalog aus der Datenbank, sonst die Startwerte aus salon.json */
+export async function getCatalog(DB) {
+  const raw = await getSetting(DB, "catalog");
+  if (raw) { try { const c = JSON.parse(raw); if (c && Array.isArray(c.categories)) return c; } catch (_) { /* Startwerte */ } }
+  return JSON.parse(JSON.stringify({ categories: salon.categories, extras: salon.extras }));
+}
+
+/** Für Website und Buchung: nur sichtbare Leistungen, mit fertigen Preistexten */
+export function publicCatalog(cat) {
+  return {
+    categories: cat.categories.filter(c => !c.hidden)
+      .map(c => ({ id: c.id, label: c.label, desc: c.desc || "", items: c.items.filter(i => !i.hidden).map(i => ({ ...i, priceText: itemPrice(i) })) }))
+      .filter(c => c.items.length),
+    extras: (cat.extras || []).filter(x => !x.hidden).map(x => ({ ...x, label: extraLabel(x) }))
+  };
+}
+
+const ID_RE = /^[a-z0-9-]{1,40}$/;
+const slug = t => String(t).toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
+  .normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 24) || "leistung";
+
+/** Eingaben aus dem Admin prüfen und bereinigen (bestehende IDs bleiben, damit alte Termine passen) */
+export function validateCatalog(input) {
+  const used = new Set();
+  const uid = (id, name) => {
+    let v = typeof id === "string" && ID_RE.test(id) && !used.has(id) ? id : null;
+    while (!v || used.has(v)) v = `${slug(name)}-${randomHex(2)}`;
+    used.add(v);
+    return v;
+  };
+  const num = (v, lo, hi, what) => {
+    if (v === "" || v === null || v === undefined) return null;
+    const n = Math.round(Number(String(v).replace(",", ".")));
+    if (!Number.isFinite(n) || n < lo || n > hi) fail(`${what}: bitte eine Zahl zwischen ${lo} und ${hi} eingeben.`);
+    return n;
+  };
+  const cats = (Array.isArray(input?.categories) ? input.categories : []).slice(0, 20).map(c => {
+    const label = clean(c.label, 40);
+    if (!label) fail("Jede Kategorie braucht einen Namen.");
+    const items = (Array.isArray(c.items) ? c.items : []).slice(0, 40).map(i => {
+      const name = clean(i.name, 80);
+      if (!name) fail(`Bitte jeder Leistung in „${label}“ einen Namen geben.`);
+      const dur = num(i.dur, 15, 480, `Dauer bei „${name}“`) ?? 30;
+      return { id: uid(i.id, name), name, meta: clean(i.meta, 120), price: num(i.price, 0, 9999, `Preis bei „${name}“`),
+        from: !!i.from, dur, hidden: !!i.hidden };
+    });
+    return { id: uid(c.id, label), label, desc: clean(c.desc, 200), hidden: !!c.hidden, items };
+  });
+  if (!cats.length) fail("Es muss mindestens eine Kategorie geben.");
+  const extras = (Array.isArray(input?.extras) ? input.extras : []).slice(0, 40).map(x => {
+    const name = clean(x.name, 80);
+    if (!name) fail("Bitte jedem Extra einen Namen geben.");
+    const min = num(x.min, 0, 999, `Preis bei „${name}“`) ?? 0;
+    let max = num(x.max, 0, 999, `Bis-Preis bei „${name}“`);
+    if (max !== null && max <= min) max = null;
+    return { id: uid(x.id, name), name, meta: clean(x.meta, 80), min, max, from: !!x.from, hidden: !!x.hidden };
+  });
+  return { categories: cats, extras };
+}
+
+/** Leistungen auflösen → Titel, Dauer, Preistext. Online-Buchung: ausgeblendete Leistungen sind nicht buchbar. */
+export function resolve(serviceIds, extraIds, catalog, allowHidden = false) {
   const items = {}, extras = {};
-  salon.categories.forEach(c => c.items.forEach(i => { items[i.id] = i; }));
-  salon.extras.forEach(x => { extras[x.id] = x; });
+  catalog.categories.forEach(c => c.items.forEach(i => { if (allowHidden || (!i.hidden && !c.hidden)) items[i.id] = i; }));
+  (catalog.extras || []).forEach(x => { if (allowHidden || !x.hidden) extras[x.id] = x; });
   const ids = [], xids = [], names = [];
   let dur = 0, sum = 0, from = false, request = false;
   for (const id of Array.isArray(serviceIds) ? serviceIds : []) {
     const i = items[id]; if (!i || ids.includes(id)) continue;
-    ids.push(id); names.push(i.name); dur += Number(i.dur);
-    if (i.price === null) request = true; else sum += Number(i.price);
+    ids.push(id); names.push(i.name); dur += Number(i.dur) || 30;
+    if (i.price === null || i.price === undefined) request = true; else { sum += Number(i.price); if (i.from) from = true; }
   }
   for (const id of Array.isArray(extraIds) ? extraIds : []) {
     const x = extras[id]; if (!x || xids.includes(id)) continue;
-    xids.push(id); sum += Number(x.min); if (x.from) from = true;
+    xids.push(id); sum += Number(x.min); if (x.from || x.max) from = true;
   }
   let price = sum ? `${from ? "ab " : ""}${sum} €` : (request ? "auf Anfrage" : "");
-  if (sum && request) price += " + Wimpern";
+  if (sum && request) price += " + auf Anfrage";
   return { ids, extras: xids, title: names.join(" + "), duration: dur, price };
 }
 

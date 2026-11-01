@@ -25,7 +25,7 @@
   <link rel="preload" href="assets/fonts/bodoni-moda-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/jost-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="assets/css/fonts.css?v=20261105">
-  <link rel="stylesheet" href="assets/css/style.css?v=20261105">
+  <link rel="stylesheet" href="assets/css/style.css?v=20261108">
   <script>document.documentElement.classList.add("js")</script>
 
   <script type="application/ld+json">
@@ -144,7 +144,8 @@
         <h2 class="reveal">Unser <em>Menü.</em></h2>
       </header>
 
-      <!-- Hände -->
+      <!-- Preisliste: wird aus den im Admin gepflegten Leistungen aufgebaut (dies ist nur die Reserve) -->
+      <div class="menu-list" data-pricelist>
       <div class="menu-block">
         <div class="menu-cat reveal">
           <span class="menu-num">01</span>
@@ -183,31 +184,31 @@
           <p>Pflege, Entspannung und auf Wunsch die passende Nagelbeschichtung.</p>
         </div>
         <div class="pedi">
-          <article class="pedi-card reveal">
-            <header><h4>Standard-Pediküre</h4><span>ca. 30 Min.</span></header>
-            <p class="pedi-price">25 €</p>
+          <article class="pedi-card reveal" data-head="pedi-s">
+            <header><h4 data-pname>Standard-Pediküre</h4><span>ca. 30 Min.</span></header>
+            <p class="pedi-price" data-pprice>25 €</p>
             <p class="pedi-incl">Fußbad · Nägel kürzen &amp; formen · Peeling · Nagelhaut entfernen · Hornhaut entfernen · Fußmassage mit Pflegecreme</p>
             <ul class="svc svc-mini">
-              <li><span class="svc-name">mit Shellac-Farblackierung</span><span class="svc-dots"></span><span class="svc-price">42 €</span></li>
-              <li><span class="svc-name">mit Pulvermodellage &amp; French</span><span class="svc-dots"></span><span class="svc-price">50 €</span></li>
+              <li data-pid="pedi-s-shellac"><span class="svc-name">mit Shellac-Farblackierung</span><span class="svc-dots"></span><span class="svc-price">42 €</span></li>
+              <li data-pid="pedi-s-pulver"><span class="svc-name">mit Pulvermodellage &amp; French</span><span class="svc-dots"></span><span class="svc-price">50 €</span></li>
             </ul>
           </article>
-          <article class="pedi-card pedi-card-dark reveal">
-            <header><h4>Deluxe-Pediküre</h4><span>ca. 41 Min.</span></header>
-            <p class="pedi-price">36 €</p>
+          <article class="pedi-card pedi-card-dark reveal" data-head="pedi-d">
+            <header><h4 data-pname>Deluxe-Pediküre</h4><span>ca. 41 Min.</span></header>
+            <p class="pedi-price" data-pprice>36 €</p>
             <p class="pedi-incl">Alle Leistungen der Standard-Pediküre · Sprudelndes Fußbad · Fußmaske · Massage mit Massagekerze (10 Min.)</p>
             <ul class="svc svc-mini">
-              <li><span class="svc-name">mit Shellac-Farblackierung</span><span class="svc-dots"></span><span class="svc-price">52 €</span></li>
-              <li><span class="svc-name">mit Pulvermodellage &amp; French</span><span class="svc-dots"></span><span class="svc-price">60 €</span></li>
+              <li data-pid="pedi-d-shellac"><span class="svc-name">mit Shellac-Farblackierung</span><span class="svc-dots"></span><span class="svc-price">52 €</span></li>
+              <li data-pid="pedi-d-pulver"><span class="svc-name">mit Pulvermodellage &amp; French</span><span class="svc-dots"></span><span class="svc-price">60 €</span></li>
             </ul>
           </article>
-          <article class="pedi-card reveal">
+          <article class="pedi-card reveal" data-head="">
             <header><h4>Nur Fußnägel</h4><span>ohne Fußpflege</span></header>
-            <p class="pedi-price"><small>ab</small> 29 €</p>
+            <p class="pedi-price" data-pprice><small>ab</small> 29 €</p>
             <p class="pedi-incl">Nagelbeschichtung für die Füße, ohne Pediküre.</p>
             <ul class="svc svc-mini">
-              <li><span class="svc-name">Shellac-Lackierung</span><span class="svc-dots"></span><span class="svc-price">29 €</span></li>
-              <li><span class="svc-name">Pulvermodellage</span><span class="svc-dots"></span><span class="svc-price">35 €</span></li>
+              <li data-pid="fuss-shellac"><span class="svc-name">Shellac-Lackierung</span><span class="svc-dots"></span><span class="svc-price">29 €</span></li>
+              <li data-pid="fuss-pulver"><span class="svc-name">Pulvermodellage</span><span class="svc-dots"></span><span class="svc-price">35 €</span></li>
             </ul>
           </article>
         </div>
@@ -223,6 +224,7 @@
           <li class="reveal" data-img="wimpern"><span class="svc-name">Neuanlage <small>Wimpernverlängerung, einzeln gesetzt</small></span><span class="svc-dots"></span><span class="svc-price">auf Anfrage</span></li>
           <li class="reveal" data-img="wimpern"><span class="svc-name">Auffüllen <small>für bestehende Verlängerung</small></span><span class="svc-dots"></span><span class="svc-price">auf Anfrage</span></li>
         </ul>
+      </div>
       </div>
 
       <div class="menu-cta reveal">
@@ -491,6 +493,6 @@
   </div>
 </div>
 
-<script src="assets/js/main.js?v=20261105" defer></script>
+<script src="assets/js/main.js?v=20261108" defer></script>
 </body>
 </html>

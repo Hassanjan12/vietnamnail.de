@@ -108,7 +108,7 @@
   $("[data-logout]").addEventListener("click", async () => { try { await api("logout"); } catch (_) {} showAuth(false); });
 
   /* ---------------- Navigation ---------------- */
-  const VIEWS = ["uebersicht", "kalender", "termine", "kunden", "einstellungen", "mehr"];
+  const VIEWS = ["uebersicht", "kalender", "termine", "kunden", "leistungen", "einstellungen", "mehr"];
   let view = null, sub = null;
 
   function route() {
@@ -122,6 +122,7 @@
     if (v === "termine") loadList();
     if (v === "einstellungen") { renderSettings(); loadClosed(); }
     if (v === "kunden") sub ? loadCustomer(Number(sub)) : loadCustomers();
+    if (v === "leistungen") loadCatalog();
     window.scrollTo(0, 0);
   }
   window.addEventListener("hashchange", () => { if (!appEl.hidden) route(); });
@@ -436,6 +437,182 @@
   });
   $("[data-cd-new]").addEventListener("click", () => { if (custCur) openForm(null, { name: custCur.name, phone: custCur.phone }); });
   $("[data-logout-m]").addEventListener("click", () => $("[data-logout]").click());
+
+  /* ---------------- Leistungen & Preise ---------------- */
+  const DURS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 210, 240, 300];
+  const priceTxt = i => (i.price === null || i.price === undefined || i.price === "") ? "auf Anfrage" : `${i.from ? "ab " : ""}${i.price} €`;
+  const extraTxt = x => x.from ? `ab ${x.min ?? 0} €` : (x.max ? `+${x.min ?? 0}–${x.max} €` : `+${x.min ?? 0} €`);
+  const lp = { cat: null, saved: null, el: $("[data-cat-editor]") };
+  const lpDirty = () => !!lp.cat && JSON.stringify(lp.cat) !== lp.saved;
+  const lpSync = () => { $("[data-cat-savebar]").hidden = !lpDirty(); };
+  window.addEventListener("beforeunload", e => { if (lpDirty()) { e.preventDefault(); e.returnValue = ""; } });
+
+  function applyCatalog(c) {
+    SALON.categories = c.categories;
+    SALON.extras = c.extras;
+    Object.keys(items).forEach(k => delete items[k]);
+    Object.keys(extras).forEach(k => delete extras[k]);
+    c.categories.forEach(cc => cc.items.forEach(i => { items[i.id] = i; }));
+    c.extras.forEach(x => { extras[x.id] = x; });
+    buildFormOptions();
+  }
+
+  async function loadCatalog() {
+    if (lpDirty()) { renderCatEditor(); lpSync(); return; } // ungespeicherte Änderungen behalten
+    try {
+      const r = await api("catalog_get");
+      lp.cat = r.catalog;
+      lp.saved = JSON.stringify(lp.cat);
+      renderCatEditor();
+      lpSync();
+    } catch (e) { if (e.message !== "auth") toast(e.message); }
+  }
+
+  const durSelect = v => {
+    const opts = DURS.includes(Number(v)) ? DURS : [...DURS, Number(v)].sort((a, b) => a - b);
+    return `<select class="lp-in" data-f="dur" aria-label="Dauer">${opts.map(m => `<option value="${m}"${Number(v) === m ? " selected" : ""}>${dur(m)}</option>`).join("")}</select>`;
+  };
+  const moveBtns = (i, n, what) => `<div class="lp-move"><button type="button" class="lp-btn" data-act="up" ${i === 0 ? "disabled" : ""} aria-label="${what} nach oben">↑</button><button type="button" class="lp-btn" data-act="down" ${i === n - 1 ? "disabled" : ""} aria-label="${what} nach unten">↓</button></div>`;
+  const visBox = hidden => `<label class="lp-vis" title="Auf Website und in der Buchung zeigen"><input type="checkbox" data-f="visible" ${hidden ? "" : "checked"}>Sichtbar</label>`;
+  const NOTES = {
+    hands: "Bei diesen Leistungen werden in der Online-Buchung zusätzlich die Extras (Design) angeboten.",
+    feet: "Auf der Website erscheinen Standard-, Deluxe-Pediküre und Fußnägel als Karten. Neue Leistungen stehen als Liste darunter."
+  };
+
+  function renderCatEditor() {
+    const c = lp.cat;
+    if (!c) return;
+    const nC = c.categories.length;
+    let html = c.categories.map((cat, ci) => `
+      <section class="lp-cat${cat.hidden ? " is-hidden" : ""}" data-cat="${ci}">
+        <div class="lp-head" data-c="${ci}" data-i="head">
+          <div class="lp-head-f">
+            <input class="lp-title" data-f="label" value="${esc(cat.label)}" maxlength="40" aria-label="Name der Kategorie">
+            <input class="lp-desc" data-f="desc" value="${esc(cat.desc || "")}" maxlength="200" placeholder="Kurze Beschreibung für die Website" aria-label="Beschreibung der Kategorie">
+          </div>
+          <div class="lp-tools">
+            ${moveBtns(ci, nC, "Kategorie")}
+            ${visBox(cat.hidden)}
+            <button type="button" class="lp-btn danger" data-act="delcat">Löschen</button>
+          </div>
+        </div>
+        ${NOTES[cat.id] ? `<p class="lp-note">${NOTES[cat.id]}</p>` : ""}
+        <div class="lp-cols"><span></span><span>Name</span><span>Beschreibung</span><span style="text-align:right">Preis €</span><span style="text-align:center">ab</span><span>Dauer</span><span>Anzeige</span><span></span></div>
+        ${cat.items.map((it, ii) => `
+          <div class="lp-row${it.hidden ? " is-hidden" : ""}${it.id ? "" : " is-new"}" data-c="${ci}" data-i="${ii}">
+            ${moveBtns(ii, cat.items.length, "Leistung")}
+            <label class="lp-f-name"><span class="lp-lbl">Name</span><input class="lp-in" data-f="name" value="${esc(it.name)}" maxlength="80" placeholder="Name der Leistung"></label>
+            <label class="lp-f-meta"><span class="lp-lbl">Beschreibung</span><input class="lp-in" data-f="meta" value="${esc(it.meta || "")}" maxlength="120" placeholder="optional"></label>
+            <label><span class="lp-lbl">Preis €</span><input class="lp-in" type="number" min="0" max="9999" step="1" inputmode="numeric" data-f="price" value="${it.price ?? ""}" placeholder="Anfrage"></label>
+            <label class="lp-ab" title="Preis als „ab …“ anzeigen"><span class="lp-lbl">ab</span><input type="checkbox" data-f="from" ${it.from ? "checked" : ""}></label>
+            <label><span class="lp-lbl">Dauer</span>${durSelect(it.dur || 30)}</label>
+            <span class="lp-prev" data-prev title="So erscheint der Preis">${esc(priceTxt(it))}</span>
+            <div class="lp-f-act">${visBox(it.hidden)}<button type="button" class="lp-btn danger" data-act="del" aria-label="Leistung löschen">✕</button></div>
+          </div>`).join("")}
+        <button type="button" class="btn btn-line btn-sm lp-add" data-act="add"><span class="plus"></span>Leistung hinzufügen</button>
+      </section>`).join("");
+    html += `
+      <section class="lp-cat lp-x" data-cat="x">
+        <div class="lp-head"><div class="lp-head-f"><p class="lp-title" style="border:0">Design &amp; Extras</p><p class="lp-desc" style="border:0">Aufpreise zusätzlich zur Leistung. Bei „bis“ entsteht eine Spanne (z. B. +5–10 €).</p></div></div>
+        <div class="lp-cols"><span></span><span>Name</span><span>Hinweis</span><span style="text-align:right">Preis €</span><span style="text-align:right">bis €</span><span style="text-align:center">ab</span><span>Anzeige</span><span></span></div>
+        ${c.extras.map((x, xi) => `
+          <div class="lp-row${x.hidden ? " is-hidden" : ""}${x.id ? "" : " is-new"}" data-x="${xi}">
+            ${moveBtns(xi, c.extras.length, "Extra")}
+            <label class="lp-f-name"><span class="lp-lbl">Name</span><input class="lp-in" data-f="name" value="${esc(x.name)}" maxlength="80" placeholder="Name des Extras"></label>
+            <label class="lp-f-meta"><span class="lp-lbl">Hinweis</span><input class="lp-in" data-f="meta" value="${esc(x.meta || "")}" maxlength="80" placeholder="optional"></label>
+            <label><span class="lp-lbl">Preis €</span><input class="lp-in" type="number" min="0" max="999" step="1" inputmode="numeric" data-f="min" value="${x.min ?? 0}"></label>
+            <label><span class="lp-lbl">bis €</span><input class="lp-in" type="number" min="0" max="999" step="1" inputmode="numeric" data-f="max" value="${x.max ?? ""}" placeholder="–"></label>
+            <label class="lp-ab" title="Preis als „ab …“ anzeigen"><span class="lp-lbl">ab</span><input type="checkbox" data-f="from" ${x.from ? "checked" : ""}></label>
+            <span class="lp-prev" data-prev>${esc(extraTxt(x))}</span>
+            <div class="lp-f-act">${visBox(x.hidden)}<button type="button" class="lp-btn danger" data-act="del" aria-label="Extra löschen">✕</button></div>
+          </div>`).join("")}
+        <button type="button" class="btn btn-line btn-sm lp-add" data-act="addx"><span class="plus"></span>Extra hinzufügen</button>
+      </section>`;
+    lp.el.innerHTML = html;
+  }
+
+  // Ziel-Objekt einer Zeile ermitteln
+  const lpTarget = row => {
+    if (row.dataset.x !== undefined) return { list: lp.cat.extras, idx: Number(row.dataset.x) };
+    const cat = lp.cat.categories[Number(row.dataset.c)];
+    if (row.dataset.i === "head") return { list: lp.cat.categories, idx: Number(row.dataset.c), head: true };
+    return { list: cat.items, idx: Number(row.dataset.i) };
+  };
+
+  lp.el.addEventListener("input", e => {
+    const f = e.target.dataset.f, row = e.target.closest("[data-x], [data-c]");
+    if (!f || !row) return;
+    const { list, idx, head } = lpTarget(row);
+    const o = list[idx], t = e.target;
+    if (f === "visible") o.hidden = !t.checked;
+    else if (f === "from") o.from = t.checked;
+    else if (f === "dur") o.dur = Number(t.value);
+    else if (f === "price" || f === "max") o[f] = t.value === "" ? null : Math.max(0, Math.round(Number(t.value)));
+    else if (f === "min") o.min = t.value === "" ? 0 : Math.max(0, Math.round(Number(t.value)));
+    else o[f] = t.value;
+    const prev = $("[data-prev]", row);
+    if (prev) prev.textContent = row.dataset.x !== undefined ? extraTxt(o) : priceTxt(o);
+    if (f === "visible") (head ? row.closest(".lp-cat") : row).classList.toggle("is-hidden", o.hidden);
+    lpSync();
+  });
+
+  lp.el.addEventListener("click", e => {
+    const b = e.target.closest("[data-act]");
+    if (!b) return;
+    const act = b.dataset.act, sec = b.closest("[data-cat]"), row = b.closest("[data-x], [data-c]");
+    const cats = lp.cat.categories;
+    let focusSel = null;
+    if (act === "add" || act === "addx") {
+      if (act === "add") { const ci = Number(sec.dataset.cat); cats[ci].items.push({ name: "", meta: "", price: null, from: false, dur: 30, hidden: false }); focusSel = `[data-c="${ci}"][data-i="${cats[ci].items.length - 1}"] [data-f="name"]`; }
+      else { lp.cat.extras.push({ name: "", meta: "", min: 0, max: null, from: false, hidden: false }); focusSel = `[data-x="${lp.cat.extras.length - 1}"] [data-f="name"]`; }
+    } else if (act === "delcat") {
+      const ci = Number(sec.dataset.cat);
+      const n = cats[ci].items.length;
+      if (cats.length === 1) { toast("Mindestens eine Kategorie muss bleiben."); return; }
+      if (!confirm(`Kategorie „${cats[ci].label}“${n ? ` mit ${n} Leistungen` : ""} löschen?\n\nTipp: Mit „Sichtbar“ ausschalten bleibt sie gespeichert.`)) return;
+      cats.splice(ci, 1);
+    } else if (row) {
+      const { list, idx } = lpTarget(row);
+      if (act === "del") {
+        const o = list[idx];
+        if ((o.name || o.id) && !confirm(`„${o.name || "Ohne Namen"}“ löschen?\n\nBestehende Termine behalten ihren Text. Tipp: „Sichtbar“ ausschalten statt löschen.`)) return;
+        list.splice(idx, 1);
+      } else if (act === "up" || act === "down") {
+        const j = idx + (act === "up" ? -1 : 1);
+        if (j < 0 || j >= list.length) return;
+        [list[idx], list[j]] = [list[j], list[idx]];
+      }
+    }
+    renderCatEditor();
+    lpSync();
+    if (focusSel) { const el = $(focusSel, lp.el); if (el) { el.focus(); el.scrollIntoView({ block: "center", behavior: "smooth" }); } }
+  });
+
+  $("[data-cat-addcat]").addEventListener("click", () => {
+    if (!lp.cat) return;
+    lp.cat.categories.push({ label: "Neue Kategorie", desc: "", hidden: false, items: [{ name: "", meta: "", price: null, from: false, dur: 30, hidden: false }] });
+    renderCatEditor(); lpSync();
+    const secs = $$(".lp-cat:not(.lp-x)", lp.el), last = secs[secs.length - 1];
+    last.scrollIntoView({ block: "center", behavior: "smooth" });
+    $(".lp-title", last).select();
+  });
+  $("[data-cat-reset]").addEventListener("click", () => {
+    if (!confirm("Alle ungespeicherten Änderungen verwerfen?")) return;
+    lp.cat = JSON.parse(lp.saved); renderCatEditor(); lpSync();
+  });
+  $("[data-cat-save]").addEventListener("click", async () => {
+    const btn = $("[data-cat-save]");
+    btn.disabled = true;
+    try {
+      const r = await api("catalog_save", { catalog: lp.cat });
+      lp.cat = r.catalog;
+      lp.saved = JSON.stringify(lp.cat);
+      renderCatEditor(); lpSync();
+      applyCatalog(r.catalog);
+      toast("Gespeichert – Website und Buchung sind aktualisiert");
+    } catch (e) { if (e.message !== "auth") toast(e.message, 5000); }
+    finally { btn.disabled = false; }
+  });
 
   /* ---------------- Kalender ---------------- */
   const cal = { mode: window.innerWidth < 900 ? "day" : "week", anchor: today(), list: [] };
@@ -850,8 +1027,8 @@
   function buildFormOptions() {
     $("[data-fm-services]").innerHTML = SALON.categories.map(c => `
       <div class="f-cat"><span>${c.label}</span><div class="chips">${c.items.map(i =>
-        `<button type="button" data-svc="${i.id}" aria-pressed="false">${esc(i.name)}</button>`).join("")}</div></div>`).join("");
-    $("[data-fm-extras]").innerHTML = SALON.extras.map(x => `<button type="button" data-ex="${x.id}" aria-pressed="false">${esc(x.name)}</button>`).join("");
+        `<button type="button" data-svc="${i.id}" aria-pressed="false"${i.hidden || c.hidden ? ' class="is-off" title="Auf der Website ausgeblendet"' : ""}>${esc(i.name)}</button>`).join("")}</div></div>`).join("");
+    $("[data-fm-extras]").innerHTML = SALON.extras.map(x => `<button type="button" data-ex="${x.id}" aria-pressed="false"${x.hidden ? ' class="is-off" title="Auf der Website ausgeblendet"' : ""}>${esc(x.name)}</button>`).join("");
     const sel = $("[data-fm-duration]");
     let opts = "";
     for (let m = 15; m <= 300; m += 15) opts += `<option value="${m}">${dur(m)}</option>`;
@@ -1066,9 +1243,8 @@
     appEl.hidden = false;
     if (!SALON) {
       SALON = await (await fetch("../assets/salon.json", { cache: "no-store" })).json();
-      SALON.categories.forEach(c => c.items.forEach(i => { items[i.id] = i; }));
-      SALON.extras.forEach(x => { extras[x.id] = x; });
-      buildFormOptions();
+      try { applyCatalog((await api("catalog_get")).catalog); } // Leistungen aus der Datenbank
+      catch (_) { applyCatalog({ categories: SALON.categories, extras: SALON.extras }); }
       await loadClosed();
     }
     route();

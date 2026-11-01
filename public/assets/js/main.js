@@ -1,9 +1,15 @@
 (() => {
   "use strict";
 
-  // Studio-Daten (Öffnungszeiten, Leistungen, Preise, Plätze) kommen aus assets/salon.json –
-  // dieselbe Datei nutzt auch der Server und der Admin-Bereich.
+  // Studio-Daten kommen von /api/catalog: Öffnungszeiten aus salon.json, Leistungen & Preise aus dem Admin.
+  // Reserve, falls der Server nicht erreichbar ist: assets/salon.json.
   let CONFIG = null, CATEGORIES = [], EXTRAS = [];
+  const itemPrice = i => i.priceText || ((i.price === null || i.price === undefined) ? "auf Anfrage" : `${i.from ? "ab " : ""}${i.price} €`);
+  const extraLabel = x => x.label || (x.from ? `ab ${x.min} €` : (x.max ? `+${x.min}–${x.max} €` : `+${x.min} €`));
+  // Vorschaubild beim Überfahren der Preisliste (nur für bekannte Leistungen)
+  const HOVER_IMG = { neu: "rosa-marmor-gold", auffuellen: "nude-weiss-ombre", french: "nude-glitzer-schleifen", laenge: "hellblau-goldfolie",
+    "3d": "tuerkis-3d-blumen", cateye: "stiletto-tuerkis-gold", chrome: "perlmutt-chrome", "design-set": "halloween-patchwork",
+    "design-nagel": "nude-braun-blume", farben: "blau-ombre-glitzer", steine: "tuerkis-schwarz-schleifen", "lash-neu": "wimpern", "lash-fill": "wimpern" };
   const MAP_EMBED = "https://www.google.com/maps?q=Vietnam+Nails,+Rannische+Str.+6,+06108+Halle+(Saale)&output=embed";
 
   const GALLERY = [
@@ -88,20 +94,20 @@
   $$("a", menu).forEach(a => a.addEventListener("click", () => setMenu(false)));
 
   /* ---------------- Reveal on scroll ---------------- */
+  let observeReveal = el => el.classList.add("is-in");
   if ("IntersectionObserver" in window && !reduced) {
     // clip-path versteckt .reveal-img auch vor dem Observer – daher das Elternelement beobachten
     const targets = new Map();
     const io = new IntersectionObserver(entries => {
       entries.forEach(e => { if (e.isIntersecting) { (targets.get(e.target) || []).forEach(t => t.classList.add("is-in")); io.unobserve(e.target); } });
     }, { rootMargin: "0px 0px -8% 0px", threshold: .08 });
-    $$(".reveal, .reveal-img").forEach(el => {
+    observeReveal = el => {
       const watch = el.classList.contains("reveal-img") ? el.parentElement : el;
       targets.set(watch, [...(targets.get(watch) || []), el]);
       io.observe(watch);
-    });
-  } else {
-    $$(".reveal, .reveal-img").forEach(el => el.classList.add("is-in"));
+    };
   }
+  $$(".reveal, .reveal-img").forEach(el => observeReveal(el));
 
   /* ---------------- Öffnungszeiten ---------------- */
   const dow = now.getDay();
@@ -149,16 +155,79 @@
       hov.style.transform = `translate3d(${cx + 40}px, ${cy - 160}px, 0)`;
       raf = Math.abs(x - cx) + Math.abs(y - cy) > .5 ? requestAnimationFrame(loop) : null;
     };
-    $$("[data-hover-list] li[data-img]").forEach(li => {
-      li.addEventListener("mouseenter", e => {
-        img.src = `assets/img/gallery/${li.dataset.img}-sm.webp`;
-        if (!hov.classList.contains("is-on")) { cx = x = e.clientX; cy = y = e.clientY; }
-        hov.classList.add("is-on");
-        if (!raf) raf = requestAnimationFrame(loop);
-      });
-      li.addEventListener("mousemove", e => { x = e.clientX; y = e.clientY; if (!raf) raf = requestAnimationFrame(loop); });
-      li.addEventListener("mouseleave", () => hov.classList.remove("is-on"));
+    const area = $("#leistungen");
+    let curLi = null;
+    area.addEventListener("mouseover", e => {
+      const li = e.target.closest("[data-hover-list] li[data-img]");
+      if (li === curLi) return;
+      curLi = li;
+      if (!li) { hov.classList.remove("is-on"); return; }
+      img.src = `assets/img/gallery/${li.dataset.img}-sm.webp`;
+      if (!hov.classList.contains("is-on")) { cx = x = e.clientX; cy = y = e.clientY; }
+      hov.classList.add("is-on");
+      if (!raf) raf = requestAnimationFrame(loop);
     });
+    area.addEventListener("mousemove", e => { x = e.clientX; y = e.clientY; if (curLi && !raf) raf = requestAnimationFrame(loop); });
+    area.addEventListener("mouseleave", () => { curLi = null; hov.classList.remove("is-on"); });
+  }
+
+  /* ---------------- Preisliste aus dem Katalog ---------------- */
+  const menuEl = $("[data-pricelist]");
+  const pediTpl = menuEl ? $(".pedi", menuEl)?.cloneNode(true) : null; // Fuß-Karten bleiben im Design erhalten
+  const svcRow = (id, name, meta, price) => `<li class="reveal"${HOVER_IMG[id] ? ` data-img="${HOVER_IMG[id]}"` : ""}>
+      <span class="svc-name">${esc(name)}${meta ? ` <small>${esc(meta)}</small>` : ""}</span><span class="svc-dots"></span><span class="svc-price">${esc(price)}</span></li>`;
+  const menuHead = (n, title, desc) => `<div class="menu-cat reveal"><span class="menu-num">${String(n).padStart(2, "0")}</span>
+      <h3>${esc(title)}</h3>${desc ? `<p>${esc(desc)}</p>` : ""}</div>`;
+
+  function renderMenu() {
+    if (!menuEl) return;
+    const byId = {};
+    CATEGORIES.forEach(c => c.items.forEach(i => { byId[i.id] = i; }));
+    let n = 0, html = "";
+    for (const c of CATEGORIES) {
+      if (c.id === "feet" && pediTpl) {
+        // Karten befüllen: Preis/Name aus dem Katalog, ausgeblendete Zeilen/Karten verschwinden
+        const tpl = pediTpl.cloneNode(true), inCards = new Set();
+        $$("article", tpl).forEach(card => {
+          const head = card.dataset.head ? byId[card.dataset.head] : null;
+          // Hauptleistung ausgeblendet: Karte weg, ihre Varianten erscheinen in der Liste darunter
+          if (card.dataset.head && !head) { card.remove(); return; }
+          const rows = $$("[data-pid]", card);
+          let min = null;
+          rows.forEach(li => {
+            const it = byId[li.dataset.pid];
+            inCards.add(li.dataset.pid);
+            if (!it) { li.remove(); return; }
+            $(".svc-price", li).textContent = itemPrice(it);
+            if (it.price != null) min = min === null ? it.price : Math.min(min, it.price);
+          });
+          if (card.dataset.head) {
+            inCards.add(card.dataset.head);
+            $("[data-pname]", card).textContent = head.name;
+            $("[data-pprice]", card).textContent = itemPrice(head);
+          } else {
+            if (!$$("[data-pid]", card).length) { card.remove(); return; }
+            $("[data-pprice]", card).innerHTML = min === null ? "auf Anfrage" : `<small>ab</small> ${min} €`;
+          }
+          if (!$("li", card)) $(".svc", card)?.remove();
+        });
+        const rest = c.items.filter(i => !inCards.has(i.id));
+        if (!$$("article", tpl).length && !rest.length) continue;
+        n++;
+        html += `<div class="menu-block menu-block-full">${menuHead(n, c.label, c.desc)}${$$("article", tpl).length ? tpl.outerHTML : ""}
+          ${rest.length ? `<ul class="svc svc-more" data-hover-list>${rest.map(i => svcRow(i.id, i.name, i.meta, itemPrice(i))).join("")}</ul>` : ""}</div>`;
+      } else {
+        n++;
+        html += `<div class="menu-block">${menuHead(n, c.label, c.desc)}<ul class="svc" data-hover-list>${c.items.map(i => svcRow(i.id, i.name, i.meta, itemPrice(i))).join("")}</ul></div>`;
+      }
+      if (c.id === "hands" && EXTRAS.length) {
+        n++;
+        html += `<div class="menu-block">${menuHead(n, "Design & Extras", "Zusätzlich zum jeweiligen Grundpreis.")}
+          <ul class="svc svc-compact" data-hover-list>${EXTRAS.map(x => svcRow(x.id, x.name, x.meta, extraLabel(x).replace(/^\+/, "+ "))).join("")}</ul></div>`;
+      }
+    }
+    menuEl.innerHTML = html;
+    $$(".reveal", menuEl).forEach(el => observeReveal(el));
   }
 
   /* ---------------- Galerie & Lightbox ---------------- */
@@ -241,8 +310,8 @@
     const bk = $("[data-bk]");
     const S = {
       step: 1,
-      tab: "hands",
-      sel: { hands: null, feet: null, lash: null },
+      tab: (CATEGORIES[0] || {}).id,
+      sel: {},
       extras: new Set(),
       month: new Date(today.getFullYear(), today.getMonth(), 1),
       date: null,
@@ -257,10 +326,10 @@
 
     const totals = () => {
       let sum = 0, from = false, request = false;
-      chosen().forEach(({ item }) => { if (item.price == null) request = true; else sum += item.price; });
-      EXTRAS.filter(x => S.extras.has(x.id)).forEach(x => { sum += x.min; if (x.from) from = true; });
+      chosen().forEach(({ item }) => { if (item.price == null) request = true; else { sum += item.price; if (item.from) from = true; } });
+      EXTRAS.filter(x => S.extras.has(x.id)).forEach(x => { sum += x.min; if (x.from || x.max) from = true; });
       const txt = sum ? `${from ? "ab " : ""}${eur(sum)}` : (request ? "auf Anfrage" : "—");
-      return { sum, from, request, txt: sum && request ? `${txt} + Wimpern` : txt };
+      return { sum, from, request, txt: sum && request ? `${txt} + auf Anfrage` : txt };
     };
 
     const els = {
@@ -281,14 +350,15 @@
     /* Schritt 1 */
     const renderTabs = () => {
       els.tabs.innerHTML = CATEGORIES.map(c => `
-        <button class="bk-tab${S.sel[c.id] ? " has-sel" : ""}" role="tab" aria-selected="${S.tab === c.id}" data-tab="${c.id}">${c.label}<i></i></button>`).join("");
+        <button class="bk-tab${S.sel[c.id] ? " has-sel" : ""}" role="tab" aria-selected="${S.tab === c.id}" data-tab="${c.id}">${esc(c.label)}<i></i></button>`).join("");
     };
     const renderServices = () => {
-      const cat = CATEGORIES.find(c => c.id === S.tab);
+      const cat = CATEGORIES.find(c => c.id === S.tab) || CATEGORIES[0];
+      if (!cat) return;
       els.services.innerHTML = cat.items.map(i => `
         <button class="svc-opt" aria-pressed="${S.sel[cat.id] === i.id}" data-svc="${i.id}">
-          <span><span class="svc-opt-name">${i.name}</span><span class="svc-opt-meta">${i.meta}</span></span>
-          <span class="svc-opt-price">${i.price == null ? "auf Anfrage" : eur(i.price)}</span>
+          <span><span class="svc-opt-name">${esc(i.name)}</span><span class="svc-opt-meta">${esc(i.meta || "")}</span></span>
+          <span class="svc-opt-price">${esc(itemPrice(i))}</span>
           <span class="tick" aria-hidden="true"></span>
         </button>`).join("");
       const showExtras = S.tab === "hands" && !!S.sel.hands;
@@ -296,7 +366,7 @@
     };
     const renderExtras = () => {
       els.extraGrid.innerHTML = EXTRAS.map(x => `
-        <button class="ex" aria-pressed="${S.extras.has(x.id)}" data-ex="${x.id}"><span>${x.name}</span><b>${x.label}</b></button>`).join("");
+        <button class="ex" aria-pressed="${S.extras.has(x.id)}" data-ex="${x.id}"><span>${esc(x.name)}</span><b>${esc(extraLabel(x))}</b></button>`).join("");
     };
 
     els.tabs.addEventListener("click", e => {
@@ -419,8 +489,8 @@
     const renderSummary = () => {
       const items = chosen();
       els.sumItems.innerHTML = items.length ? items.map(({ cat, item }) => `
-        <div class="sum-item"><span>${item.name}<small>${cat.label}</small></span><b>${item.price == null ? "auf Anfrage" : eur(item.price)}</b></div>`).join("")
-        + extrasList().map(x => `<div class="sum-item"><span>${x.name}<small>Extra</small></span><b>${x.label}</b></div>`).join("")
+        <div class="sum-item"><span>${esc(item.name)}<small>${esc(cat.label)}</small></span><b>${esc(itemPrice(item))}</b></div>`).join("")
+        + extrasList().map(x => `<div class="sum-item"><span>${esc(x.name)}<small>Extra</small></span><b>${esc(extraLabel(x))}</b></div>`).join("")
         : `<p class="sum-empty">Noch keine Leistung gewählt.</p>`;
       els.sumWhen.innerHTML = S.date ? `<p><i>Datum</i>${dateLong()}</p>${S.time ? `<p><i>Zeit</i>${nice(S.time)} Uhr</p>` : ""}` : "";
       const t = totals();
@@ -435,7 +505,7 @@
     const renderReview = () => {
       const items = chosen();
       const rows = [
-        ["Leistung", items.map(({ item }) => esc(item.name)).join("<br>") + (S.extras.size ? `<small>Extras: ${extrasList().map(x => x.name).join(", ")}</small>` : ""), 1],
+        ["Leistung", items.map(({ item }) => esc(item.name)).join("<br>") + (S.extras.size ? `<small>Extras: ${esc(extrasList().map(x => x.name).join(", "))}</small>` : ""), 1],
         ["Termin", `${dateLong()}<small>${nice(S.time)} Uhr</small>`, 2],
         ["Kontakt", `${esc(fv("name"))}<small>${esc(fv("phone"))}</small>`, 3],
         fv("note") ? ["Wunsch", esc(fv("note")), 3] : null,
@@ -636,7 +706,7 @@
       if (bkReturn) bkReturn.focus({ preventScroll: true });
     };
     const resetBk = () => {
-      S.step = 1; S.tab = "hands"; S.sel = { hands: null, feet: null, lash: null }; S.extras.clear();
+      S.step = 1; S.tab = (CATEGORIES[0] || {}).id; S.sel = {}; S.extras.clear();
       S.date = null; S.time = null; S.ref = null; S.saved = false; S.autoAdvanced = false; els.form.reset();
     };
 
@@ -668,14 +738,24 @@
   }
 
   /* ---------------- Start: Studio-Daten laden ---------------- */
-  fetch("assets/salon.json")
-    .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+  const getJson = url => fetch(url, { cache: "no-store" }).then(r => { if (!r.ok) throw new Error(url); return r.json(); });
+  // Reserve-Datei: ausgeblendete Einträge entfernen (wie der Server)
+  const fromFile = d => ({ ...d,
+    categories: d.categories.filter(c => !c.hidden).map(c => ({ ...c, items: c.items.filter(i => !i.hidden) })).filter(c => c.items.length),
+    extras: (d.extras || []).filter(x => !x.hidden) });
+  const showMenu = () => { if (menuEl) menuEl.classList.add("is-ready"); };
+  setTimeout(showMenu, 2500); // Sicherheitsnetz: Preisliste nie dauerhaft unsichtbar
+  getJson("/api/catalog")
+    .catch(() => getJson("assets/salon.json").then(fromFile))
     .then(data => {
       CONFIG = data; CATEGORIES = data.categories; EXTRAS = data.extras;
+      try { renderMenu(); } catch (e) { console.warn("Preisliste", e); }
+      showMenu();
       initHours();
       initBooking();
     })
     .catch(() => {
+      showMenu();
       // Ohne Daten: Buchen-Knöpfe rufen direkt im Studio an
       $$("[data-book]").forEach(b => b.addEventListener("click", () => { location.href = "tel:+4934568673949"; }));
     });

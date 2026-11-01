@@ -6,12 +6,14 @@ import * as slots from "./api/slots.js";
 import * as book from "./api/book.js";
 import * as track from "./api/track.js";
 import * as admin from "./api/admin.js";
+import * as catalog from "./api/catalog.js";
 
 const ROUTES = {
   "/api/slots": { GET: slots.onRequestGet },
   "/api/book": { POST: book.onRequestPost },
   "/api/track": { POST: track.onRequestPost },
-  "/api/admin": { POST: admin.onRequestPost }
+  "/api/admin": { POST: admin.onRequestPost },
+  "/api/catalog": { GET: catalog.onRequestGet }
 };
 
 export default {

@@ -4,7 +4,7 @@
 import {
   handle, json, fail, readJson, db, getSetting, setSetting, rateLimit, hashPassword, verifyPassword, sha256, randomHex,
   clean, validDate, validTime, resolve, busy, fits, toMin, closedDates, bookingOut, newRef, berlinNow, addDays,
-  customerKey, priceValue, ensureCustomer, normPhone,
+  customerKey, priceValue, ensureCustomer, normPhone, getCatalog, validateCatalog, publicCatalog,
   STATUSES, SOURCES, salon
 } from "../lib.js";
 
@@ -108,7 +108,7 @@ export const onRequestPost = handle(async ({ request, env }) => {
       if (!SOURCES.includes(source)) source = "telefon";
       const svcIds = "services" in b ? b.services : JSON.parse(cur?.services || "[]");
       const exIds = "extras" in b ? b.extras : JSON.parse(cur?.extras || "[]");
-      const svc = resolve(svcIds, exIds);
+      const svc = resolve(svcIds, exIds, await getCatalog(DB), true);
       const title = svc.title || clean(get("title"), 160);
       if (!title) fail("Bitte mindestens eine Leistung wählen.");
       let duration = Number(get("duration", svc.duration || 60)) || 60;
@@ -253,6 +253,16 @@ export const onRequestPost = handle(async ({ request, env }) => {
       const r = await DB.prepare("UPDATE customers SET note = ? WHERE id = ?").bind(clean(input.note, 2000), Number(input.id || 0)).run();
       if (!r.meta.changes) fail("Kundin nicht gefunden.", 404);
       return json({ ok: true });
+    }
+
+    case "catalog_get": {
+      return json({ ok: true, catalog: await getCatalog(DB) });
+    }
+
+    case "catalog_save": {
+      const catalog = validateCatalog(input.catalog);
+      await setSetting(DB, "catalog", JSON.stringify(catalog));
+      return json({ ok: true, catalog, public: publicCatalog(catalog) });
     }
 
     case "password": {

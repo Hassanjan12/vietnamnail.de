@@ -6,12 +6,35 @@
   "_hours": "Pro Wochentag (0 = Sonntag): [Öffnung, Schließung, letzter Terminbeginn (optional)]",
   "hours": {
     "0": null,
-    "1": ["08:30", "19:00", "18:15"],
-    "2": ["08:30", "19:00", "18:15"],
-    "3": ["08:30", "19:00", "18:15"],
-    "4": ["08:30", "19:00", "18:15"],
-    "5": ["08:30", "19:00", "18:15"],
-    "6": ["09:00", "16:00"]
+    "1": [
+      "08:30",
+      "19:00",
+      "18:15"
+    ],
+    "2": [
+      "08:30",
+      "19:00",
+      "18:15"
+    ],
+    "3": [
+      "08:30",
+      "19:00",
+      "18:15"
+    ],
+    "4": [
+      "08:30",
+      "19:00",
+      "18:15"
+    ],
+    "5": [
+      "08:30",
+      "19:00",
+      "18:15"
+    ],
+    "6": [
+      "09:00",
+      "16:00"
+    ]
   },
   "closedDates": [],
   "slotStep": 30,
@@ -19,34 +42,221 @@
   "daysAhead": 60,
   "capacity": 4,
   "categories": [
-    { "id": "hands", "label": "Hände", "items": [
-      { "id": "neu", "name": "Neumodellage", "meta": "Gel / Acryl, Form & Länge nach Wunsch", "price": 33, "dur": 30 },
-      { "id": "auffuellen", "name": "Auffüllen", "meta": "Für bestehende Modellage", "price": 30, "dur": 30 }
-    ]},
-    { "id": "feet", "label": "Füße", "items": [
-      { "id": "pedi-s", "name": "Standard-Pediküre", "meta": "ca. 30 Min.", "price": 25, "dur": 30 },
-      { "id": "pedi-s-shellac", "name": "Standard-Pediküre + Shellac", "meta": "inkl. Farblackierung", "price": 42, "dur": 30 },
-      { "id": "pedi-s-pulver", "name": "Standard-Pediküre + Pulvermodellage", "meta": "inkl. French Design", "price": 50, "dur": 30 },
-      { "id": "pedi-d", "name": "Deluxe-Pediküre", "meta": "ca. 41 Min. · mit Fußmaske & Massage", "price": 36, "dur": 45 },
-      { "id": "pedi-d-shellac", "name": "Deluxe-Pediküre + Shellac", "meta": "inkl. Farblackierung", "price": 52, "dur": 45 },
-      { "id": "pedi-d-pulver", "name": "Deluxe-Pediküre + Pulvermodellage", "meta": "inkl. French Design", "price": 60, "dur": 45 },
-      { "id": "fuss-shellac", "name": "Shellac Fußnägel", "meta": "ohne Pediküre", "price": 29, "dur": 30 },
-      { "id": "fuss-pulver", "name": "Pulvermodellage Fußnägel", "meta": "ohne Pediküre", "price": 35, "dur": 30 }
-    ]},
-    { "id": "lash", "label": "Wimpern", "items": [
-      { "id": "lash-neu", "name": "Wimpern – Neuanlage", "meta": "Wimpernverlängerung · Preis nach Beratung", "price": null, "dur": 30 },
-      { "id": "lash-fill", "name": "Wimpern – Auffüllen", "meta": "Wimpernverlängerung · Preis nach Beratung", "price": null, "dur": 30 }
-    ]}
+    {
+      "id": "hands",
+      "label": "Hände",
+      "desc": "Modellage mit Gel oder Acryl — Form und Länge nach Wunsch.",
+      "hidden": false,
+      "items": [
+        {
+          "id": "neu",
+          "name": "Neumodellage",
+          "meta": "Gel / Acryl, Form & Länge nach Wunsch",
+          "price": 33,
+          "from": false,
+          "dur": 30,
+          "hidden": false
+        },
+        {
+          "id": "auffuellen",
+          "name": "Auffüllen",
+          "meta": "Für bestehende Modellage",
+          "price": 30,
+          "from": false,
+          "dur": 30,
+          "hidden": false
+        }
+      ]
+    },
+    {
+      "id": "feet",
+      "label": "Füße",
+      "desc": "Pflege, Entspannung und auf Wunsch die passende Nagelbeschichtung.",
+      "hidden": false,
+      "items": [
+        {
+          "id": "pedi-s",
+          "name": "Standard-Pediküre",
+          "meta": "ca. 30 Min.",
+          "price": 25,
+          "from": false,
+          "dur": 30,
+          "hidden": false
+        },
+        {
+          "id": "pedi-s-shellac",
+          "name": "Standard-Pediküre + Shellac",
+          "meta": "inkl. Farblackierung",
+          "price": 42,
+          "from": false,
+          "dur": 30,
+          "hidden": false
+        },
+        {
+          "id": "pedi-s-pulver",
+          "name": "Standard-Pediküre + Pulvermodellage",
+          "meta": "inkl. French Design",
+          "price": 50,
+          "from": false,
+          "dur": 30,
+          "hidden": false
+        },
+        {
+          "id": "pedi-d",
+          "name": "Deluxe-Pediküre",
+          "meta": "ca. 41 Min. · mit Fußmaske & Massage",
+          "price": 36,
+          "from": false,
+          "dur": 45,
+          "hidden": false
+        },
+        {
+          "id": "pedi-d-shellac",
+          "name": "Deluxe-Pediküre + Shellac",
+          "meta": "inkl. Farblackierung",
+          "price": 52,
+          "from": false,
+          "dur": 45,
+          "hidden": false
+        },
+        {
+          "id": "pedi-d-pulver",
+          "name": "Deluxe-Pediküre + Pulvermodellage",
+          "meta": "inkl. French Design",
+          "price": 60,
+          "from": false,
+          "dur": 45,
+          "hidden": false
+        },
+        {
+          "id": "fuss-shellac",
+          "name": "Shellac Fußnägel",
+          "meta": "ohne Pediküre",
+          "price": 29,
+          "from": false,
+          "dur": 30,
+          "hidden": false
+        },
+        {
+          "id": "fuss-pulver",
+          "name": "Pulvermodellage Fußnägel",
+          "meta": "ohne Pediküre",
+          "price": 35,
+          "from": false,
+          "dur": 30,
+          "hidden": false
+        }
+      ]
+    },
+    {
+      "id": "lash",
+      "label": "Wimpern",
+      "desc": "Einzeln gesetzt, abgestimmt auf Ihre Augenform.",
+      "hidden": false,
+      "items": [
+        {
+          "id": "lash-neu",
+          "name": "Wimpern – Neuanlage",
+          "meta": "Wimpernverlängerung · Preis nach Beratung",
+          "price": null,
+          "from": false,
+          "dur": 30,
+          "hidden": false
+        },
+        {
+          "id": "lash-fill",
+          "name": "Wimpern – Auffüllen",
+          "meta": "Wimpernverlängerung · Preis nach Beratung",
+          "price": null,
+          "from": false,
+          "dur": 30,
+          "hidden": false
+        }
+      ]
+    }
   ],
   "extras": [
-    { "id": "french", "name": "French oder Farbe", "label": "+5 €", "min": 5 },
-    { "id": "laenge", "name": "Überlänge", "label": "+3–10 €", "min": 3, "from": true },
-    { "id": "3d", "name": "3D-Blumendesign", "label": "+4 €", "min": 4 },
-    { "id": "cateye", "name": "Cat-Eye-Effekt", "label": "+8–10 €", "min": 8, "from": true },
-    { "id": "chrome", "name": "Chrome-Effekt", "label": "+5–10 €", "min": 5, "from": true },
-    { "id": "design-set", "name": "Design – ganzes Set", "label": "ab 10 €", "min": 10, "from": true },
-    { "id": "design-nagel", "name": "Design – einzelne Nägel", "label": "ab 2 €", "min": 2, "from": true },
-    { "id": "farben", "name": "Zwei zusätzliche Farben", "label": "+3 €", "min": 3 },
-    { "id": "steine", "name": "Schmucksteine (2 Stk.)", "label": "+3 €", "min": 3 }
-  ]
+    {
+      "id": "french",
+      "name": "French oder Farblackierung",
+      "meta": "",
+      "min": 5,
+      "max": null,
+      "from": false,
+      "hidden": false
+    },
+    {
+      "id": "laenge",
+      "name": "Überlänge",
+      "meta": "je nach Länge",
+      "min": 3,
+      "max": 10,
+      "from": false,
+      "hidden": false
+    },
+    {
+      "id": "3d",
+      "name": "3D-Blumendesign",
+      "meta": "",
+      "min": 4,
+      "max": null,
+      "from": false,
+      "hidden": false
+    },
+    {
+      "id": "cateye",
+      "name": "Cat-Eye-Effekt",
+      "meta": "",
+      "min": 8,
+      "max": 10,
+      "from": false,
+      "hidden": false
+    },
+    {
+      "id": "chrome",
+      "name": "Chrome-Effekt",
+      "meta": "",
+      "min": 5,
+      "max": 10,
+      "from": false,
+      "hidden": false
+    },
+    {
+      "id": "design-set",
+      "name": "Nageldesign – gesamtes Set",
+      "meta": "",
+      "min": 10,
+      "max": null,
+      "from": true,
+      "hidden": false
+    },
+    {
+      "id": "design-nagel",
+      "name": "Nageldesign – pro Nagel",
+      "meta": "",
+      "min": 2,
+      "max": null,
+      "from": true,
+      "hidden": false
+    },
+    {
+      "id": "farben",
+      "name": "Zwei zusätzliche Nagelfarben",
+      "meta": "",
+      "min": 3,
+      "max": null,
+      "from": false,
+      "hidden": false
+    },
+    {
+      "id": "steine",
+      "name": "Zwei Swarovski- oder Schmucksteine",
+      "meta": "",
+      "min": 3,
+      "max": null,
+      "from": false,
+      "hidden": false
+    }
+  ],
+  "_catalog": "Startwerte für Leistungen & Preise. Nach dem ersten Speichern im Admin (Leistungen) gelten die Werte aus der Datenbank."
 }

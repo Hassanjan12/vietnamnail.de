@@ -1,5 +1,5 @@
 /** POST /api/book → neue Online-Buchung (sofort fest gebucht) */
-import { handle, json, fail, readJson, db, rateLimit, clean, validDate, validTime, resolve, busy, closedDates, freeSlots, insertIfFree, newRef, salon } from "../lib.js";
+import { handle, json, fail, readJson, db, rateLimit, clean, validDate, validTime, resolve, getCatalog, busy, closedDates, freeSlots, insertIfFree, newRef, salon } from "../lib.js";
 
 export const onRequestPost = handle(async ({ request, env }) => {
   const input = await readJson(request);
@@ -14,7 +14,7 @@ export const onRequestPost = handle(async ({ request, env }) => {
   if (!input.consent) fail("Bitte bestätigen Sie die Datenschutzhinweise.");
   if (!validDate(date) || !validTime(time)) fail("Ungültiger Termin.");
 
-  const svc = resolve(input.services, input.extras);
+  const svc = resolve(input.services, input.extras, await getCatalog(DB));
   if (!svc.ids.length) fail("Bitte wählen Sie eine Leistung.");
   const duration = Math.max(30, svc.duration);
 
