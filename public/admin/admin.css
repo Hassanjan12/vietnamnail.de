@@ -424,6 +424,14 @@ select.lp-in { padding-right: 24px; background-image: linear-gradient(45deg, tra
 .closed-list button { display: inline-flex; align-items: center; gap: 10px; }
 .closed-list button::after { content: "×"; font-size: 1.1rem; line-height: 1; color: var(--mute); }
 .closed-list button:hover::after { color: var(--danger); }
+.staff-form { grid-template-columns: minmax(0, 1fr) auto; }
+.staff-form .btn { grid-column: auto; }
+.st-list { display: grid; gap: 8px; margin: 4px 0 10px; }
+.st-row { display: grid; grid-template-columns: minmax(0, 1fr) 92px 108px; gap: 10px; align-items: center; }
+.st-state { font-size: .82rem; color: var(--mute); }
+.st-row .lp-btn { width: 100%; height: 40px; }
+.st-row.is-hidden .lp-in { color: var(--mute); text-decoration: line-through; }
+.st-list .empty { padding: 6px 0; text-align: left; font-size: 1rem; }
 .closed-list .empty { padding: 6px 0; text-align: left; font-size: 1rem; }
 .kv { display: grid; grid-template-columns: auto 1fr; gap: 8px 18px; margin: 0; font-size: .95rem; }
 .kv dt { color: var(--mute); font-size: .78rem; letter-spacing: .06em; padding-top: 2px; }

@@ -7,11 +7,11 @@
 
 ## Veröffentlichen (einmalig)
 1. **D1-Datenbank anlegen:** Dashboard → *Storage & Databases* → *D1* → *Create*,
-   Name `vietnam-nails`, **Location/Jurisdiction: EU**. Die **Database ID** in `wrangler.toml` bei `database_id` eintragen.
+   Name `vietnam-nails-eu`, **Location/Jurisdiction: EU**. Die **Database ID** in `wrangler.toml` bei `database_id` eintragen.
 2. **Worker anlegen:** *Workers & Pages* → *Create* → *Import a repository* → dieses Repository.
-   - Projektname: **`vietnamnail-de`** (muss mit `name` in `wrangler.toml` übereinstimmen)
+   - Projektname: **`vietnamnail-de2`** (muss mit `name` in `wrangler.toml` übereinstimmen)
    - Build command: leer · Deploy command: `npx wrangler deploy` (Standard)
-3. **Deploy** – danach ist die Seite unter `vietnamnail-de.<konto>.workers.dev` erreichbar.
+3. **Deploy** – danach ist die Seite unter `vietnamnail-de2.<konto>.workers.dev` erreichbar.
 4. **Sofort** `/admin/` öffnen und das Admin-Passwort festlegen (mind. 10 Zeichen).
 5. **Domain:** Worker → *Settings* → *Domains & Routes* → *Add* → *Custom domain*.
 6. Optional: *Email Routing*, damit `info@DOMAIN` an ein bestehendes Postfach weitergeleitet wird.
@@ -25,7 +25,10 @@ npx wrangler@4.149.0 dev
 (liest `wrangler.toml`, legt eine lokale Test-Datenbank in `.wrangler/` an)
 
 ## Pflegen
-- Öffnungszeiten, letzter Termin, Leistungen, Preise, Dauer, Plätze (`capacity`): `public/assets/salon.json`
+- Leistungen & Preise: im Admin unter *Leistungen* · Fotos: im Admin unter *Galerie*
+- Team (Wunsch-Mitarbeiter bei der Buchung): im Admin unter *Einstellungen → Team*.
+  Gleichzeitig buchbar sind so viele Termine, wie Personen sichtbar sind; ohne Team gilt `capacity` aus `salon.json`.
+- Öffnungszeiten, letzter Termin, Startwerte der Leistungen, Plätze (`capacity`): `public/assets/salon.json`
 - Urlaub/Feiertage: im Admin unter *Einstellungen → Geschlossene Tage*
 - Nach Änderungen an CSS/JS die Versionsnummer `?v=` in den HTML-Dateien erhöhen.
 

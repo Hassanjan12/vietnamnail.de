@@ -11,7 +11,7 @@
   <link rel="preload" href="../assets/fonts/bodoni-moda-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="../assets/fonts/jost-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../assets/css/fonts.css?v=20261105">
-  <link rel="stylesheet" href="admin.css?v=20261109">
+  <link rel="stylesheet" href="admin.css?v=20261110">
 </head>
 <body>
 
@@ -339,6 +339,17 @@
           <p class="form-err" data-closed-err></p>
           <div class="chips closed-list" data-closed-list></div>
         </div>
+        <div class="card card-wide-s">
+          <h2>Team</h2>
+          <p class="muted small">Bei der Online-Buchung kann die Kundin eine Person wählen oder „Egal“. Gleichzeitig buchbar sind so viele Termine, wie Personen sichtbar sind. Wer gerade nicht arbeitet (z. B. längerer Urlaub), einfach ausblenden.</p>
+          <form class="closed-form staff-form" data-staff-form>
+            <label class="field"><span>Name</span><input name="name" maxlength="40" autocomplete="off" placeholder="z. B. Lan" required></label>
+            <button class="btn btn-dark" type="submit">Hinzufügen</button>
+          </form>
+          <p class="form-err" data-staff-err></p>
+          <div class="st-list" data-staff-list></div>
+          <p class="muted small" data-staff-cap></p>
+        </div>
         <div class="card">
           <h2>Datensicherung</h2>
           <p class="muted small">Alle Termine als Tabelle herunterladen (öffnet in Excel). Am besten einmal im Monat sichern und an einem sicheren Ort aufbewahren – die Datei enthält Namen und Telefonnummern.</p>
@@ -425,6 +436,7 @@
         <label class="field"><span>Dauer</span><select name="duration" data-fm-duration></select></label>
       </div>
       <p class="f-hint" data-fm-hint></p>
+      <label class="field" data-fm-staff-box hidden><span>Bei (Wunsch der Kundin)</span><select data-fm-staff></select></label>
 
       <div class="f-row">
         <div class="f-block">
@@ -458,6 +470,6 @@
 
 <div class="toast" data-toast role="status" aria-live="polite"></div>
 
-<script src="admin.js?v=20261110" defer></script>
+<script src="admin.js?v=20261111" defer></script>
 </body>
 </html>

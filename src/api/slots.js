@@ -1,5 +1,5 @@
-/** GET /api/slots?month=2026-11&dur=30 → freie Startzeiten je Tag des Monats */
-import { handle, json, fail, db, closedDates, freeSlots, addDays } from "../lib.js";
+/** GET /api/slots?month=2026-11&dur=30[&staff=ID] → freie Startzeiten je Tag des Monats */
+import { handle, json, fail, db, closedDates, freeSlots, addDays, staffList, capacityOf } from "../lib.js";
 
 export const onRequestGet = handle(async ({ request, env }) => {
   const url = new URL(request.url);
@@ -7,12 +7,16 @@ export const onRequestGet = handle(async ({ request, env }) => {
   const dur = Math.max(15, Math.min(480, parseInt(url.searchParams.get("dur") || "30", 10) || 30));
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) fail("Ungültiger Monat.");
   const DB = await db(env);
-  const closed = await closedDates(DB);
+  const [closed, staff] = await Promise.all([closedDates(DB), staffList(DB)]);
+  const cap = capacityOf(staff);
+  // Wunsch-Mitarbeiter nur, wenn sichtbar
+  const want = Number(url.searchParams.get("staff") || 0);
+  const staffId = staff.some(s => s.id === want && !s.hidden) ? want : null;
   // alle aktiven Termine des Monats in einer Abfrage
-  const { results } = await DB.prepare("SELECT date, start_min, duration FROM bookings WHERE date LIKE ? AND status IN ('pending','confirmed')").bind(`${month}-%`).all();
+  const { results } = await DB.prepare("SELECT date, start_min, duration, staff_id FROM bookings WHERE date LIKE ? AND status IN ('pending','confirmed')").bind(`${month}-%`).all();
   const byDay = {};
-  for (const r of results) (byDay[r.date] ||= []).push([r.start_min, r.start_min + r.duration]);
+  for (const r of results) (byDay[r.date] ||= []).push([r.start_min, r.start_min + r.duration, r.staff_id ?? null]);
   const days = {};
-  for (let d = `${month}-01`; d.startsWith(month); d = addDays(d, 1)) days[d] = freeSlots(d, dur, byDay[d] || [], closed);
+  for (let d = `${month}-01`; d.startsWith(month); d = addDays(d, 1)) days[d] = freeSlots(d, dur, byDay[d] || [], closed, cap, staffId);
   return json({ ok: true, days, closed: closed.filter(x => x.startsWith(month)) });
 });

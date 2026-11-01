@@ -334,8 +334,11 @@
       month: new Date(today.getFullYear(), today.getMonth(), 1),
       date: null,
       time: null,
+      staff: null, // Wunsch-Mitarbeiter (null = egal)
       ref: null
     };
+    const STAFF = Array.isArray(CONFIG.staff) ? CONFIG.staff : [];
+    const staffName = () => (STAFF.find(p => p.id === S.staff) || {}).name || "";
     const STEPS = 4;
     const lastDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + CONFIG.daysAhead);
     const findItem = id => CATEGORIES.flatMap(c => c.items).find(i => i.id === id);
@@ -354,7 +357,7 @@
       tabs: $("[data-bk-tabs]"), services: $("[data-bk-services]"),
       extras: $("[data-bk-extras]"), extraGrid: $("[data-bk-extra-grid]"),
       month: $("[data-cal-month]"), grid: $("[data-cal-grid]"), prev: $("[data-cal-prev]"), next: $("[data-cal-next]"),
-      slots: $("[data-slots]"), form: $("[data-bk-form]"), review: $("[data-review]"),
+      slots: $("[data-slots]"), staff: $("[data-bk-staff]"), staffRow: $("[data-bk-staff-row]"), form: $("[data-bk-form]"), review: $("[data-review]"),
       sumItems: $("[data-sum-items]"), sumWhen: $("[data-sum-when]"), sumTotal: $("[data-sum-total]"),
       progress: $("[data-bk-progress]"), stepinfo: $("[data-bk-stepinfo]"),
       back: $("[data-bk-back]"), nextBtn: $("[data-bk-next]"), err: $("[data-bk-err]"),
@@ -412,12 +415,12 @@
     const avail = {};
     const closedExtra = new Set(); // im Admin eingetragene Urlaubs-/Feiertage
     const isClosed = d => !CONFIG.hours[d.getDay()] || CONFIG.closedDates.includes(ymd(d)) || closedExtra.has(ymd(d));
-    const availKey = d => `${ymd(d).slice(0, 7)}|${Math.max(duration(), 30)}`;
+    const availKey = d => `${ymd(d).slice(0, 7)}|${Math.max(duration(), 30)}|${S.staff || ""}`;
     const ensureAvail = d => {
       const k = availKey(d);
       if (avail[k]) return;
       avail[k] = "loading";
-      fetch(`/api/slots?month=${ymd(d).slice(0, 7)}&dur=${Math.max(duration(), 30)}`, { cache: "no-store" })
+      fetch(`/api/slots?month=${ymd(d).slice(0, 7)}&dur=${Math.max(duration(), 30)}${S.staff ? `&staff=${S.staff}` : ""}`, { cache: "no-store" })
         .then(r => { if (!r.ok) throw new Error(); return r.json(); })
         .then(j => {
           avail[k] = j.days;
@@ -430,6 +433,8 @@
             const next = new Date(S.month.getFullYear(), S.month.getMonth() + 1, 1);
             if (next <= lastDay) S.month = next;
           }
+          // gewählte Zeit ist (für diese Person) nicht mehr frei
+          if (S.time && S.date && ymd(S.date).startsWith(k.split("|")[0]) && !slotsFor(S.date).includes(S.time)) { S.time = null; renderSummary(); }
           if (S.step === 2) { renderCal(); renderSlots(); }
         })
         .catch(() => { avail[k] = "offline"; });
@@ -498,6 +503,18 @@
       $$("[data-slot]", els.slots).forEach(x => x.setAttribute("aria-pressed", String(x === b)));
       renderSummary(); clearErr();
     });
+    const renderStaff = () => {
+      els.staff.hidden = !STAFF.length;
+      if (!STAFF.length) return;
+      els.staffRow.innerHTML = [{ id: null, name: "Egal", sub: "wer frei ist" }, ...STAFF].map(p =>
+        `<button type="button" class="stf" role="radio" aria-checked="${S.staff === p.id}" data-staff="${p.id ?? ""}">${esc(p.name)}${p.sub ? `<small>${p.sub}</small>` : ""}</button>`).join("");
+    };
+    els.staffRow.addEventListener("click", e => {
+      const b = e.target.closest("[data-staff]"); if (!b) return;
+      S.staff = b.dataset.staff ? Number(b.dataset.staff) : null;
+      if (S.time && S.date && !slotsFor(S.date).includes(S.time)) S.time = null;
+      renderStaff(); renderCal(); renderSlots(); renderSummary(); clearErr();
+    });
     els.prev.addEventListener("click", () => { S.month = new Date(S.month.getFullYear(), S.month.getMonth() - 1, 1); renderCal(); });
     els.next.addEventListener("click", () => { S.month = new Date(S.month.getFullYear(), S.month.getMonth() + 1, 1); renderCal(); });
 
@@ -510,7 +527,8 @@
         <div class="sum-item"><span>${esc(item.name)}<small>${esc(cat.label)}</small></span><b>${esc(itemPrice(item))}</b></div>`).join("")
         + extrasList().map(x => `<div class="sum-item"><span>${esc(x.name)}<small>Extra</small></span><b>${esc(extraLabel(x))}</b></div>`).join("")
         : `<p class="sum-empty">Noch keine Leistung gewählt.</p>`;
-      els.sumWhen.innerHTML = S.date ? `<p><i>Datum</i>${dateLong()}</p>${S.time ? `<p><i>Zeit</i>${nice(S.time)} Uhr</p>` : ""}` : "";
+      els.sumWhen.innerHTML = (S.date ? `<p><i>Datum</i>${dateLong()}</p>${S.time ? `<p><i>Zeit</i>${nice(S.time)} Uhr</p>` : ""}` : "")
+        + (S.staff ? `<p><i>Bei</i>${esc(staffName())}</p>` : "");
       const t = totals();
       els.sumTotal.textContent = t.txt;
       const n = items.length + S.extras.size;
@@ -524,7 +542,7 @@
       const items = chosen();
       const rows = [
         ["Leistung", items.map(({ item }) => esc(item.name)).join("<br>") + (S.extras.size ? `<small>Extras: ${esc(extrasList().map(x => x.name).join(", "))}</small>` : ""), 1],
-        ["Termin", `${dateLong()}<small>${nice(S.time)} Uhr</small>`, 2],
+        ["Termin", `${dateLong()}<small>${nice(S.time)} Uhr${S.staff ? ` · bei ${esc(staffName())}` : ""}</small>`, 2],
         ["Kontakt", `${esc(fv("name"))}<small>${esc(fv("phone"))}</small>`, 3],
         fv("note") ? ["Wunsch", esc(fv("note")), 3] : null,
         ["Preis", `${totals().txt}<small>Endpreis je nach Design und Aufwand</small>`, 1]
@@ -568,7 +586,7 @@
         if (on) { s.classList.toggle("is-back", back); s.style.animation = "none"; void s.offsetWidth; s.style.animation = ""; }
       });
       if (n === 1) { renderTabs(); renderServices(); renderExtras(); }
-      if (n === 2) { if (S.date) S.month = new Date(S.date.getFullYear(), S.date.getMonth(), 1); renderCal(); renderSlots(); }
+      if (n === 2) { if (S.date) S.month = new Date(S.date.getFullYear(), S.date.getMonth(), 1); renderStaff(); renderCal(); renderSlots(); }
       if (n === 4) renderReview();
       const pct = Math.min(n, STEPS) / STEPS * 100;
       els.progress.style.width = `${n > STEPS ? 100 : pct}%`;
@@ -610,6 +628,7 @@
         `• Leistung: ${items.map(({ item }) => item.name).join(" + ")}`,
         S.extras.size ? `• Extras: ${extrasList().map(x => x.name).join(", ")}` : null,
         `• Termin: ${dateLong()}, ${nice(S.time)} Uhr`,
+        S.staff ? `• Bei: ${staffName()}` : null,
         `• Preis laut Website: ${totals().txt}`,
         "",
         `Name: ${fv("name")}`,
@@ -636,7 +655,7 @@
         services: chosen().map(({ item }) => item.id), extras: [...S.extras],
         date: ymd(S.date), time: S.time,
         name: fv("name"), phone: fv("phone"), note: fv("note"),
-        visit: els.form.elements.visit.value, consent: true,
+        visit: els.form.elements.visit.value, consent: true, staff: S.staff,
         website: els.form.elements.website.value
       };
       let saved = false;
@@ -670,8 +689,9 @@
       $("[data-done-card]").innerHTML = [
         ["Termin", `${dateLong()}, ${nice(S.time)} Uhr`],
         ["Leistung", chosen().map(({ item }) => esc(item.name)).join(" + ")],
+        S.staff ? ["Bei", esc(staffName())] : null,
         ["Adresse", "Rannische Str. 6, Halle"]
-      ].map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join("");
+      ].filter(Boolean).map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join("");
       go(5, 1);
     };
     $("[data-done-wa]").addEventListener("click", openWa);
@@ -725,7 +745,7 @@
     };
     const resetBk = () => {
       S.step = 1; S.tab = (CATEGORIES[0] || {}).id; S.sel = {}; S.extras.clear();
-      S.date = null; S.time = null; S.ref = null; S.saved = false; S.autoAdvanced = false; els.form.reset();
+      S.date = null; S.time = null; S.staff = null; S.ref = null; S.saved = false; S.autoAdvanced = false; els.form.reset();
     };
 
     $$("[data-book]").forEach(b => b.addEventListener("click", e => { e.preventDefault(); openBk(b, b.dataset.preselect); }));

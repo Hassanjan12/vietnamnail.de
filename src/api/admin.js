@@ -5,7 +5,7 @@ import {
   handle, json, fail, readJson, db, getSetting, setSetting, rateLimit, hashPassword, verifyPassword, sha256, randomHex,
   clean, validDate, validTime, resolve, busy, fits, toMin, closedDates, bookingOut, newRef, berlinNow, addDays,
   customerKey, priceValue, ensureCustomer, normPhone, getCatalog, validateCatalog, publicCatalog,
-  galleryList, toB64, PHOTO_CATS,
+  galleryList, toB64, PHOTO_CATS, staffList, capacityOf, staffFree,
   STATUSES, SOURCES, salon
 } from "../lib.js";
 
@@ -115,28 +115,32 @@ export const onRequestPost = handle(async ({ request, env }) => {
       let duration = Number(get("duration", svc.duration || 60)) || 60;
       duration = Math.max(15, Math.min(600, duration));
       const price = ("services" in b || "extras" in b) ? svc.price : String(cur?.price ?? svc.price);
+      const staff = await staffList(DB);
+      let staff_id = "staff_id" in b ? (b.staff_id ? Number(b.staff_id) : null) : (cur?.staff_id ?? null);
+      if (staff_id !== null && !staff.some(s => s.id === staff_id)) fail("Diese Person gibt es nicht mehr.");
 
       // Überschneidung nur als Warnung – mit force trotzdem speichern
       if (["pending", "confirmed"].includes(status) && !input.force) {
-        const cap = Math.max(1, Number(salon.capacity) || 1);
-        if (!fits(await busy(DB, date, id), toMin(time), duration, cap)) fail("Zu dieser Zeit sind bereits alle Plätze belegt.", 409, { code: "overlap" });
+        const list = await busy(DB, date, id);
+        if (!fits(list, toMin(time), duration, capacityOf(staff))) fail("Zu dieser Zeit sind bereits alle Plätze belegt.", 409, { code: "overlap" });
+        if (!staffFree(list, staff_id, toMin(time), duration)) fail(`${staff.find(s => s.id === staff_id).name} hat zu dieser Zeit schon einen Termin.`, 409, { code: "overlap" });
       }
       const now = new Date().toISOString();
       let newId = id;
       if (id) {
         await DB.batch([
           DB.prepare(`UPDATE bookings SET status=?, source=?, name=?, phone=?, services=?, extras=?, title=?, date=?, time=?, start_min=?,
-            duration=?, price=?, note=?, updated_at=?, customer_key=?, price_value=? WHERE id=?`)
+            duration=?, price=?, note=?, updated_at=?, customer_key=?, price_value=?, staff_id=? WHERE id=?`)
             .bind(status, source, name, phone, JSON.stringify(svc.ids), JSON.stringify(svc.extras), title, date, time, toMin(time), duration, price, note, now,
-              customerKey(name, phone), priceValue(price), id),
+              customerKey(name, phone), priceValue(price), staff_id, id),
           ensureCustomer(DB, customerKey(name, phone))
         ]);
       } else {
         const [r] = await DB.batch([
-          DB.prepare(`INSERT INTO bookings(ref, status, source, name, phone, services, extras, title, date, time, start_min, duration, price, note, visit, created_at, updated_at, customer_key, price_value)
-            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+          DB.prepare(`INSERT INTO bookings(ref, status, source, name, phone, services, extras, title, date, time, start_min, duration, price, note, visit, created_at, updated_at, customer_key, price_value, staff_id)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
             .bind(newRef(), status, source, name, phone, JSON.stringify(svc.ids), JSON.stringify(svc.extras), title, date, time, toMin(time), duration, price, note, "", now, now,
-              customerKey(name, phone), priceValue(price)),
+              customerKey(name, phone), priceValue(price), staff_id),
           ensureCustomer(DB, customerKey(name, phone))
         ]);
         newId = r.meta.last_row_id;
@@ -202,8 +206,9 @@ export const onRequestPost = handle(async ({ request, env }) => {
     }
 
     case "export": {
-      const { results } = await DB.prepare("SELECT ref, date, time, duration, name, phone, title, price, status, source, note, created_at FROM bookings ORDER BY date, time").all();
-      const head = ["Nr.", "Datum", "Uhrzeit", "Dauer (Min.)", "Name", "Telefon", "Leistung", "Preis", "Status", "Gebucht über", "Notiz", "Eingegangen"];
+      const { results } = await DB.prepare(`SELECT b.ref, b.date, b.time, b.duration, b.name, b.phone, b.title, b.price, COALESCE(s.name, '') AS staff, b.status, b.source, b.note, b.created_at
+        FROM bookings b LEFT JOIN staff s ON s.id = b.staff_id ORDER BY b.date, b.time`).all();
+      const head = ["Nr.", "Datum", "Uhrzeit", "Dauer (Min.)", "Name", "Telefon", "Leistung", "Preis", "Wunsch-Mitarbeiter", "Status", "Gebucht über", "Notiz", "Eingegangen"];
       // Formel-Injection in Excel verhindern (Zellen, die mit = + - @ beginnen)
       const cell = v => { let s = String(v ?? ""); if (/^[=+\-@]/.test(s)) s = "'" + s; return `"${s.replace(/"/g, '""')}"`; };
       const csv = "﻿" + [head, ...results.map(r => Object.values(r))].map(row => row.map(cell).join(";")).join("\r\n") + "\r\n";
@@ -254,6 +259,27 @@ export const onRequestPost = handle(async ({ request, env }) => {
       const r = await DB.prepare("UPDATE customers SET note = ? WHERE id = ?").bind(clean(input.note, 2000), Number(input.id || 0)).run();
       if (!r.meta.changes) fail("Kundin nicht gefunden.", 404);
       return json({ ok: true });
+    }
+
+    case "staff_list": {
+      return json({ ok: true, staff: await staffList(DB), capacity: Math.max(1, Number(salon.capacity) || 1) });
+    }
+    case "staff_add": {
+      const name = clean(input.name, 40);
+      if (!name) fail("Bitte einen Namen eingeben.");
+      const n = await DB.prepare("SELECT COUNT(*) AS n FROM staff").first();
+      if ((n?.n || 0) >= 30) fail("Maximal 30 Personen.");
+      if ((await staffList(DB)).some(s => s.name.toLowerCase() === name.toLowerCase())) fail("Diesen Namen gibt es schon.");
+      await DB.prepare("INSERT INTO staff(name, hidden, sort, created_at) VALUES(?, 0, (SELECT COALESCE(MAX(sort), 0) + 1 FROM staff), ?)").bind(name, new Date().toISOString()).run();
+      return json({ ok: true, staff: await staffList(DB) });
+    }
+    case "staff_update": {
+      const id = Number(input.id || 0), name = clean(input.name, 40);
+      if (!name) fail("Bitte einen Namen eingeben.");
+      if ((await staffList(DB)).some(s => s.id !== id && s.name.toLowerCase() === name.toLowerCase())) fail("Diesen Namen gibt es schon.");
+      const r = await DB.prepare("UPDATE staff SET name = ?, hidden = ? WHERE id = ?").bind(name, input.hidden ? 1 : 0, id).run();
+      if (!r.meta.changes) fail("Nicht gefunden.", 404);
+      return json({ ok: true, staff: await staffList(DB) });
     }
 
     case "catalog_get": {

@@ -30,6 +30,9 @@
   const dur = m => m < 60 ? `${m} Min.` : `${Math.floor(m / 60)} Std.${m % 60 ? ` ${m % 60} Min.` : ""}`;
 
   let SALON = null;
+  let STAFF = []; // Team: [{ id, name, hidden }]
+  const staffName = b => b && b.staff_id ? ((STAFF.find(p => p.id === b.staff_id) || {}).name || "?") : "";
+  const withStaff = b => esc(b.title) + (b.staff_id ? ` · bei ${esc(staffName(b))}` : "");
   const items = {}, extras = {};
 
   /* ---------------- API ---------------- */
@@ -120,7 +123,7 @@
     if (v === "uebersicht") loadOverview();
     if (v === "kalender") loadCal();
     if (v === "termine") loadList();
-    if (v === "einstellungen") { renderSettings(); loadClosed(); }
+    if (v === "einstellungen") { renderSettings(); loadClosed(); loadStaff().then(renderSettings); }
     if (v === "kunden") sub ? loadCustomer(Number(sub)) : loadCustomers();
     if (v === "leistungen") loadCatalog();
     if (v === "galerie") loadGallery();
@@ -204,7 +207,7 @@
       const d = parse(b.date);
       return `<button class="drow" data-open="${b.id}">
         <span class="drow-time">${nice(b.time)}<small>${relDay(b.date) || `${DAY_S[d.getDay()]}, ${d.getDate()}. ${MONTH_S[d.getMonth()]}`}</small></span>
-        <span><span class="drow-name">${esc(b.name)}</span><span class="drow-meta">${esc(b.title)}</span></span>
+        <span><span class="drow-name">${esc(b.name)}</span><span class="drow-meta">${withStaff(b)}</span></span>
         ${fresh.has(b.id) ? `<span class="pill pill-new">Neu</span>` : `<span></span>`}
       </button>`;
     }).join("");
@@ -221,7 +224,7 @@
     el.innerHTML = act.map(b => `
       <button class="drow${toMin(b.time) + b.duration < nowM ? " is-past" : ""}" data-open="${b.id}">
         <span class="drow-time">${nice(b.time)}<small>bis ${nice(endTime(b))}</small></span>
-        <span><span class="drow-name">${esc(b.name)}</span><span class="drow-meta">${esc(b.title)}</span></span>
+        <span><span class="drow-name">${esc(b.name)}</span><span class="drow-meta">${withStaff(b)}</span></span>
         <span class="pill pill-${b.status}">${STATUS[b.status]}</span>
       </button>`).join("");
     cache(list);
@@ -950,8 +953,8 @@
         const w = 100 / cols;
         return `<button class="ev ev-${b.status}${b.source === "online" ? " is-online" : ""}${hgt < 44 ? " is-short" : ""}" data-open="${b.id}"
           style="top:${top}px;height:${hgt}px;left:calc(${col * w}% + 3px);width:calc(${w}% - 6px)"
-          title="${esc(`${nice(b.time)}–${nice(endTime(b))} ${b.name} · ${b.title}`)}">
-          <b>${hgt < 44 ? `${nice(b.time)} ` : ""}${esc(b.name)}</b><span>${nice(b.time)}–${nice(endTime(b))} · ${esc(b.title)}</span></button>`;
+          title="${esc(`${nice(b.time)}–${nice(endTime(b))} ${b.name} · ${b.title}${b.staff_id ? ` · bei ${staffName(b)}` : ""}`)}">
+          <b>${hgt < 44 ? `${nice(b.time)} ` : ""}${esc(b.name)}</b><span>${nice(b.time)}–${nice(endTime(b))} · ${withStaff(b)}</span></button>`;
       }).join("");
       const now = k === t0 && nowM > start && nowM < end ? `<div class="cal-now" style="top:${(nowM - start) * ppm}px"></div>` : "";
       return `<div class="cal-col${closed ? " is-closed" : ""}" data-day="${k}" data-start="${start}" style="height:${height}px">${off}${evs}${now}<div class="cal-ghost"></div></div>`;
@@ -1075,7 +1078,7 @@
             <button class="brow" data-open="${b.id}">
               <span class="brow-time">${nice(b.time)}<small>${dur(b.duration)}</small></span>
               <span class="brow-name">${esc(b.name)}<small>${esc(b.phone || "ohne Telefon")}</small></span>
-              <span class="brow-svc">${esc(b.title)}</span>
+              <span class="brow-svc">${withStaff(b)}</span>
               <span class="pill pill-${b.status}">${STATUS[b.status]}</span>
               <span class="brow-src">${SOURCE[b.source] || ""}</span>
             </button>`).join("")}</div></div>`;
@@ -1110,6 +1113,7 @@
       ["Leistung", esc(b.title)],
       ex.length ? ["Extras", esc(ex.join(", "))] : null,
       ["Dauer", dur(b.duration)],
+      STAFF.length || b.staff_id ? ["Bei", b.staff_id ? `${esc(staffName(b))} <small class="muted">(Wunsch der Kundin)</small>` : "Kein Wunsch"] : null,
       b.price ? ["Preis", esc(b.price)] : null,
       ["Telefon", b.phone ? esc(b.phone) : "–"],
       b.visit ? ["Besuch", esc(b.visit)] : null,
@@ -1166,6 +1170,13 @@
     for (let m = 15; m <= 300; m += 15) opts += `<option value="${m}">${dur(m)}</option>`;
     sel.innerHTML = opts;
   }
+  function staffOptions(cur) {
+    const box = $("[data-fm-staff-box]"), sel = $("[data-fm-staff]");
+    const list = STAFF.filter(p => !p.hidden || p.id === cur);
+    box.hidden = !list.length;
+    sel.innerHTML = `<option value="">Kein Wunsch</option>` + list.map(p => `<option value="${p.id}">${esc(p.name)}${p.hidden ? " (ausgeblendet)" : ""}</option>`).join("");
+    sel.value = cur ? String(cur) : "";
+  }
 
   function autoDuration() {
     const total = [...fm.services].reduce((a, id) => a + (items[id]?.dur || 0), 0);
@@ -1215,6 +1226,7 @@
     form.date.value = b ? b.date : (prefill.date || ymd(view === "kalender" ? cal.anchor : today()));
     form.time.value = b ? b.time : (prefill.time || defTime);
     if (b) form.duration.value = String(Math.min(300, Math.max(15, Math.round(b.duration / 15) * 15)));
+    staffOptions(b ? b.staff_id : null);
     $(".f-extras", form).open = fm.extras.size > 0;
     syncForm();
     modal.hidden = false;
@@ -1256,7 +1268,8 @@
       name: form.name.value.trim(), phone: form.phone.value.trim(),
       services: [...fm.services], extras: [...fm.extras], title: form.title.value.trim(),
       date: form.date.value, time: form.time.value, duration: Number(form.duration.value),
-      source: fm.source, status: fm.status, note: form.note.value.trim()
+      source: fm.source, status: fm.status, note: form.note.value.trim(),
+      staff_id: Number($("[data-fm-staff]").value) || null
     };
     const btn = $("[data-fm-save]");
     btn.disabled = true;
@@ -1285,7 +1298,7 @@
       ["Telefon", esc(SALON.phone)],
       ["WhatsApp", `+${esc(SALON.whatsapp)}`],
       ["Mo–Fr", fmt("1")], ["Samstag", fmt("6")], ["Sonntag", fmt("0")],
-      ["Plätze gleichzeitig", String(SALON.capacity)],
+      ["Termine gleichzeitig", String(STAFF.filter(p => !p.hidden).length || SALON.capacity)],
       ["Online buchbar", `${SALON.daysAhead} Tage im Voraus`]
     ].map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
   }
@@ -1336,6 +1349,45 @@
     saveClosed(closedOwn.filter(d => d !== b.dataset.unclose), "Tag wieder geöffnet");
   });
 
+  /* Team (Wunsch-Mitarbeiter bei der Buchung) */
+  async function loadStaff() {
+    try { STAFF = (await api("staff_list")).staff; } catch (_) { /* still */ }
+    renderStaff();
+  }
+  function renderStaff() {
+    const el = $("[data-staff-list]");
+    el.innerHTML = STAFF.length ? STAFF.map(p => `
+      <div class="st-row${p.hidden ? " is-hidden" : ""}" data-id="${p.id}">
+        <input class="lp-in" value="${esc(p.name)}" maxlength="40" aria-label="Name" data-st-name>
+        <span class="st-state">${p.hidden ? "ausgeblendet" : "buchbar"}</span>
+        <button type="button" class="lp-btn" data-st-toggle>${p.hidden ? "Einblenden" : "Ausblenden"}</button>
+      </div>`).join("") : `<p class="empty">Noch niemand eingetragen – online gelten ${SALON.capacity} Plätze gleichzeitig.</p>`;
+    const n = STAFF.filter(p => !p.hidden).length;
+    $("[data-staff-cap]").textContent = n ? `Gleichzeitig online buchbar: ${n} ${n === 1 ? "Termin" : "Termine"} (= sichtbare Personen).` : "";
+  }
+  async function staffCall(action, data, msg) {
+    const err = $("[data-staff-err]");
+    err.textContent = "";
+    try { STAFF = (await api(action, data)).staff; renderStaff(); renderSettings(); toast(msg); return true; }
+    catch (x) { if (x.message !== "auth") err.textContent = x.message; renderStaff(); return false; }
+  }
+  $("[data-staff-form]").addEventListener("submit", async e => {
+    e.preventDefault();
+    const f = e.target, name = f.name.value.trim();
+    if (!name) return;
+    if (await staffCall("staff_add", { name }, `${name} hinzugefügt`)) f.reset();
+  });
+  $("[data-staff-list]").addEventListener("change", e => {
+    const row = e.target.closest(".st-row"); if (!row || !e.target.matches("[data-st-name]")) return;
+    const p = STAFF.find(x => x.id === Number(row.dataset.id));
+    staffCall("staff_update", { id: p.id, name: e.target.value.trim(), hidden: p.hidden }, "Gespeichert");
+  });
+  $("[data-staff-list]").addEventListener("click", e => {
+    const b = e.target.closest("[data-st-toggle]"); if (!b) return;
+    const p = STAFF.find(x => x.id === Number(b.closest(".st-row").dataset.id));
+    staffCall("staff_update", { id: p.id, name: p.name, hidden: !p.hidden }, p.hidden ? `${p.name} ist wieder buchbar` : `${p.name} ausgeblendet`);
+  });
+
   /* Datensicherung */
   $("[data-export]").addEventListener("click", async () => {
     try {
@@ -1378,6 +1430,7 @@
       try { applyCatalog((await api("catalog_get")).catalog); } // Leistungen aus der Datenbank
       catch (_) { applyCatalog({ categories: SALON.categories, extras: SALON.extras }); }
       await loadClosed();
+      await loadStaff();
     }
     route();
     clearInterval(poll);

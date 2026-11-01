@@ -450,6 +450,16 @@ h2 em, h1 em { font-weight: 400; }
 .ex[aria-pressed="true"] { border-color: var(--black); background: var(--black); color: var(--white); }
 .ex[aria-pressed="true"] b { color: var(--mute-dark); }
 
+/* Wunsch-Mitarbeiter */
+.bk-staff { margin-bottom: 28px; }
+.bk-staff .label { margin-bottom: 12px; }
+.bk-staff-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.stf { min-height: 48px; padding: 0 22px; border: 1px solid var(--line); font-size: .98rem; transition: all .25s var(--ease); }
+.stf small { margin-left: 8px; font-size: .8rem; color: var(--mute); }
+.stf:hover { border-color: var(--black); }
+.stf[aria-checked="true"] { background: var(--black); color: var(--white); border-color: var(--black); }
+.stf[aria-checked="true"] small { color: var(--mute-dark); }
+
 /* Calendar */
 .cal { border: 1px solid var(--black); padding: 26px clamp(16px, 3vw, 34px) 28px; }
 .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }

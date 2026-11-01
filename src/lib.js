@@ -109,7 +109,10 @@ const SCHEMA = [
     cat TEXT NOT NULL DEFAULT 'elegant', title TEXT NOT NULL DEFAULT '', sub TEXT NOT NULL DEFAULT '',
     static TEXT, mime TEXT NOT NULL DEFAULT 'image/webp', w INTEGER NOT NULL DEFAULT 700, h INTEGER NOT NULL DEFAULT 900,
     created_at TEXT NOT NULL)`,
-  `CREATE TABLE IF NOT EXISTS photo_data (id INTEGER NOT NULL, size TEXT NOT NULL, b64 TEXT NOT NULL, PRIMARY KEY (id, size))`
+  `CREATE TABLE IF NOT EXISTS photo_data (id INTEGER NOT NULL, size TEXT NOT NULL, b64 TEXT NOT NULL, PRIMARY KEY (id, size))`,
+  // Mitarbeiter: nur Name; ausgeblendete bleiben für alte Termine erhalten
+  `CREATE TABLE IF NOT EXISTS staff (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, hidden INTEGER NOT NULL DEFAULT 0,
+    sort INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)`
 ];
 
 /* ---------- Galerie ---------- */
@@ -187,6 +190,8 @@ async function migrate(DB) {
   const alter = [];
   if (!has("customer_key")) alter.push(DB.prepare("ALTER TABLE bookings ADD COLUMN customer_key TEXT"));
   if (!has("price_value")) alter.push(DB.prepare("ALTER TABLE bookings ADD COLUMN price_value INTEGER NOT NULL DEFAULT 0"));
+  // Wunsch-Mitarbeiter (NULL = kein Wunsch)
+  if (!has("staff_id")) alter.push(DB.prepare("ALTER TABLE bookings ADD COLUMN staff_id INTEGER"));
   if (alter.length) await DB.batch(alter);
   await DB.prepare("CREATE INDEX IF NOT EXISTS idx_bookings_customer ON bookings(customer_key)").run();
   for (let round = 0; round < 20; round++) {
@@ -266,10 +271,23 @@ export async function closedDates(DB) {
 
 export const hoursFor = (date, closed) => closed.includes(date) ? null : (salon.hours[String(dow(date))] || null);
 
+/** Belegte Zeiten eines Tages: [Beginn, Ende, Mitarbeiter-ID oder null] */
 export async function busy(DB, date, excludeId = null) {
-  const { results } = await DB.prepare(`SELECT id, start_min, duration FROM bookings WHERE date = ? AND status IN ${ACTIVE}`).bind(date).all();
-  return results.filter(r => r.id !== excludeId).map(r => [r.start_min, r.start_min + r.duration]);
+  const { results } = await DB.prepare(`SELECT id, start_min, duration, staff_id FROM bookings WHERE date = ? AND status IN ${ACTIVE}`).bind(date).all();
+  return results.filter(r => r.id !== excludeId).map(r => [r.start_min, r.start_min + r.duration, r.staff_id ?? null]);
 }
+
+/* ---------- Mitarbeiter ---------- */
+
+export async function staffList(DB) {
+  const { results } = await DB.prepare("SELECT id, name, hidden FROM staff ORDER BY sort, id").all();
+  return results.map(r => ({ id: Number(r.id), name: r.name, hidden: !!r.hidden }));
+}
+/** Gleichzeitige Termine = Zahl der sichtbaren Mitarbeiter; ohne Mitarbeiter die Plätze aus salon.json */
+export const capacityOf = staff => staff.filter(s => !s.hidden).length || Math.max(1, Number(salon.capacity) || 1);
+/** Hat diese Mitarbeiterin im Zeitraum schon einen Termin? */
+export const staffFree = (busyList, staffId, start, dur) =>
+  !staffId || !busyList.some(([a, b, s]) => s === staffId && a < start + dur && b > start);
 
 export function fits(busyList, start, dur, cap) {
   for (let t = start; t < start + dur; t += 5) {
@@ -281,7 +299,7 @@ export function fits(busyList, start, dur, cap) {
 }
 
 /** Freie Startzeiten eines Tages (berücksichtigt Öffnungszeit, letzten Terminbeginn, Vorlauf, Plätze). */
-export function freeSlots(date, dur, busyList, closed) {
+export function freeSlots(date, dur, busyList, closed, cap, staffId = null) {
   const h = hoursFor(date, closed);
   if (!h) return [];
   const now = berlinNow();
@@ -289,11 +307,10 @@ export function freeSlots(date, dur, busyList, closed) {
   const [o, c] = [toMin(h[0]), toMin(h[1])];
   const last = h[2] ? toMin(h[2]) : c;
   const earliest = date === now.date ? now.minutes + Number(salon.leadMinutes) : -1;
-  const cap = Math.max(1, Number(salon.capacity) || 1);
   const starts = [];
   for (let m = o; m <= last; m += Number(salon.slotStep)) starts.push(m);
   if (h[2] && !starts.includes(last)) starts.push(last);
-  return starts.filter(m => m >= earliest && m + dur <= c && fits(busyList, m, dur, cap)).map(toHM);
+  return starts.filter(m => m >= earliest && m + dur <= c && fits(busyList, m, dur, cap) && staffFree(busyList, staffId, m, dur)).map(toHM);
 }
 
 /* ---------- Leistungen & Preise (im Admin bearbeitbar) ---------- */
@@ -396,9 +413,11 @@ export function newRef() {
  * Die höchste Belegung liegt immer am eigenen Beginn oder am Beginn eines anderen Termins im Zeitraum.
  */
 export async function insertIfFree(DB, b, cap) {
-  const sql = `INSERT INTO bookings (ref, status, source, name, phone, services, extras, title, date, time, start_min, duration, price, note, visit, created_at, updated_at, customer_key, price_value)
-    SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?16, ?18, ?19
-    WHERE NOT EXISTS (
+  const sql = `INSERT INTO bookings (ref, status, source, name, phone, services, extras, title, date, time, start_min, duration, price, note, visit, created_at, updated_at, customer_key, price_value, staff_id)
+    SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?16, ?18, ?19, ?20
+    WHERE NOT EXISTS (SELECT 1 FROM bookings y WHERE ?20 IS NOT NULL AND y.staff_id = ?20 AND y.date = ?9 AND y.status IN ${ACTIVE}
+                      AND y.start_min < ?11 + ?12 AND y.start_min + y.duration > ?11)
+    AND NOT EXISTS (
       SELECT 1 FROM (
         SELECT ?11 AS p
         UNION SELECT start_min FROM bookings WHERE date = ?9 AND status IN ${ACTIVE} AND start_min > ?11 AND start_min < ?11 + ?12
@@ -408,11 +427,11 @@ export async function insertIfFree(DB, b, cap) {
     )`;
   const r = await DB.prepare(sql).bind(b.ref, b.status, b.source, b.name, b.phone, JSON.stringify(b.services), JSON.stringify(b.extras),
     b.title, b.date, b.time, toMin(b.time), b.duration, b.price, b.note, b.visit, new Date().toISOString(), cap,
-    customerKey(b.name, b.phone), priceValue(b.price)).run();
+    customerKey(b.name, b.phone), priceValue(b.price), b.staff_id ?? null).run();
   if (r.meta.changes === 1) await ensureCustomer(DB, customerKey(b.name, b.phone)).run();
   return r.meta.changes === 1;
 }
 
 export function bookingOut(r) {
-  return { ...r, id: Number(r.id), duration: Number(r.duration), services: JSON.parse(r.services || "[]"), extras: JSON.parse(r.extras || "[]") };
+  return { ...r, id: Number(r.id), duration: Number(r.duration), staff_id: r.staff_id == null ? null : Number(r.staff_id), services: JSON.parse(r.services || "[]"), extras: JSON.parse(r.extras || "[]") };
 }
