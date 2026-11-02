@@ -262,6 +262,15 @@
     applyFilter();
     collapse();
     gal.classList.add("is-ready");
+    renderIg(list);
+  }
+  // Instagram-Bereich: vier aktuelle Fotos aus der Galerie (möglichst nicht die ersten neun, die schon oben stehen)
+  const igEl = $("[data-ig]");
+  function renderIg(list) {
+    if (!igEl || list.length < 4) return;
+    const pick = list.length >= 13 ? list.slice(9, 13) : list.slice(-4);
+    const href = igEl.querySelector("a").getAttribute("href");
+    igEl.innerHTML = pick.map(p => `<a class="ig-tile is-in" href="${esc(href)}" target="_blank" rel="noopener" aria-label="${esc(photoAlt(p))} – mehr auf Instagram"><img src="${esc(p.sm)}" alt="" loading="lazy" width="700" height="700"></a>`).join("");
   }
   fetch("/api/gallery", { cache: "no-store" })
     .then(r => { if (!r.ok) throw new Error(); return r.json(); })
