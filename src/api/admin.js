@@ -307,6 +307,11 @@ export const onRequestPost = handle(async ({ request, env }) => {
     case "photo_delete": {
       const id = Number(input.id || 0);
       await DB.batch([DB.prepare("DELETE FROM photo_data WHERE id = ?").bind(id), DB.prepare("DELETE FROM photos WHERE id = ?").bind(id)]);
+      // auch aus dem Cloudflare-Zwischenspeicher entfernen
+      try {
+        const o = new URL(request.url).origin;
+        if (typeof caches !== "undefined") await Promise.all(["sm", "lg"].map(sz => caches.default.delete(`${o}/api/photo/${id}/${sz}`)));
+      } catch (_) { /* nicht kritisch */ }
       return json({ ok: true });
     }
 
@@ -348,7 +353,8 @@ export const onPhotoUpload = handle(async ({ request, env }) => {
   const sm = form.get("sm"), lg = form.get("lg");
   if (!sm || !lg || typeof sm === "string" || typeof lg === "string") fail("Bild fehlt.");
   if (!TYPES.includes(sm.type) || !TYPES.includes(lg.type) || sm.type !== lg.type) fail("Nur JPG oder WebP.");
-  if (sm.size > 600_000 || lg.size > 1_800_000) fail("Bild ist zu groß.", 413);
+  // D1 erlaubt ca. 2 MB pro Zeile; Base64 ist ein Drittel größer → max. 1,2 MB je Bild
+  if (sm.size > 600_000 || lg.size > 1_200_000) fail("Bild ist zu groß.", 413);
   const count = await DB.prepare("SELECT COUNT(*) AS n FROM photos").first();
   if ((count?.n || 0) >= MAX_PHOTOS) fail(`Maximal ${MAX_PHOTOS} Fotos. Bitte zuerst alte Fotos löschen.`);
   const [smB, lgB] = [new Uint8Array(await sm.arrayBuffer()), new Uint8Array(await lg.arrayBuffer())];
@@ -357,13 +363,14 @@ export const onPhotoUpload = handle(async ({ request, env }) => {
   if (!ok(smB) || !ok(lgB)) fail("Die Datei ist kein gültiges Bild.");
   const cat = Object.keys(PHOTO_CATS).includes(String(form.get("cat"))) ? String(form.get("cat")) : "elegant";
   const w = Math.max(1, Math.min(4000, Number(form.get("w")) || 700)), h = Math.max(1, Math.min(4000, Number(form.get("h")) || 900));
-  const min = await DB.prepare("SELECT COALESCE(MIN(sort), 1) AS s FROM photos").first();
-  const r = await DB.prepare("INSERT INTO photos(sort, cat, title, sub, static, mime, w, h, created_at) VALUES(?,?,?,?,NULL,?,?,?,?)")
-    .bind((min?.s ?? 1) - 1, cat, clean(form.get("title"), 60), clean(form.get("sub"), 80), sm.type, w, h, new Date().toISOString()).run();
-  const id = r.meta.last_row_id;
+  // alles in einem Schritt: entweder Foto + beide Größen oder gar nichts (keine leeren Einträge)
+  const [smT, lgT] = [toB64(smB), toB64(lgB)];
   await DB.batch([
-    DB.prepare("INSERT INTO photo_data(id, size, b64) VALUES(?, 'sm', ?)").bind(id, toB64(smB)),
-    DB.prepare("INSERT INTO photo_data(id, size, b64) VALUES(?, 'lg', ?)").bind(id, toB64(lgB))
+    DB.prepare("INSERT INTO photos(sort, cat, title, sub, static, mime, w, h, created_at) VALUES((SELECT COALESCE(MIN(sort), 1) - 1 FROM photos),?,?,?,NULL,?,?,?,?)")
+      .bind(cat, clean(form.get("title"), 60), clean(form.get("sub"), 80), sm.type, w, h, new Date().toISOString()),
+    DB.prepare("INSERT INTO photo_data(id, size, b64) VALUES((SELECT MAX(id) FROM photos), 'sm', ?)").bind(smT),
+    DB.prepare("INSERT INTO photo_data(id, size, b64) VALUES((SELECT MAX(id) FROM photos), 'lg', ?)").bind(lgT)
   ]);
-  return json({ ok: true, id });
+  const row = await DB.prepare("SELECT MAX(id) AS id FROM photos").first();
+  return json({ ok: true, id: row?.id });
 });

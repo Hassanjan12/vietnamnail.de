@@ -31,7 +31,18 @@
 
   let SALON = null;
   let STAFF = []; // Team: [{ id, name, hidden }]
-  const staffName = b => b && b.staff_id ? ((STAFF.find(p => p.id === b.staff_id) || {}).name || "?") : "";
+  let staffReloaded = 0;
+  const staffName = b => {
+    if (!b || !b.staff_id) return "";
+    const p = STAFF.find(x => x.id === b.staff_id);
+    if (p) return p.name;
+    // Person wurde auf einem anderen Gerät angelegt → Team neu laden und Ansicht auffrischen
+    if (Date.now() - staffReloaded > 15000) {
+      staffReloaded = Date.now();
+      loadStaff().then(() => { if (STAFF.some(x => x.id === b.staff_id)) route(); });
+    }
+    return "…";
+  };
   const withStaff = b => esc(b.title) + (b.staff_id ? ` · bei ${esc(staffName(b))}` : "");
   const items = {}, extras = {};
 
@@ -118,7 +129,7 @@
     const [h, s2] = location.hash.slice(1).split("/");
     const v = VIEWS.includes(h) ? h : "uebersicht";
     view = v; sub = s2 || null;
-    $$("[data-view]").forEach(s => { s.hidden = s.dataset.view !== v; });
+    $$("section.view[data-view]").forEach(s => { s.hidden = s.dataset.view !== v; });
     $$("[data-nav]").forEach(a => a.classList.toggle("is-on", a.dataset.nav === v || (a.dataset.navAlso || "").split(" ").includes(v)));
     if (v === "uebersicht") loadOverview();
     if (v === "kalender") loadCal();
@@ -530,7 +541,9 @@
     let type = "image/webp";
     let lg = await encode(1400, .82, type);
     if (!lg.blob || lg.blob.type !== "image/webp") { type = "image/jpeg"; lg = await encode(1400, .85, type); }
-    if (lg.blob.size > 1_700_000) lg = await encode(1100, .72, type);
+    // Server nimmt max. 1,2 MB → notfalls kleiner speichern
+    if (lg.blob.size > 1_100_000) lg = await encode(1100, .72, type);
+    if (lg.blob.size > 1_100_000) lg = await encode(900, .62, type);
     const sm = await encode(700, .8, type);
     if (!sm.blob || !lg.blob) throw new Error("Bild konnte nicht umgewandelt werden.");
     return { sm: sm.blob, lg: lg.blob, w: sm.w, h: sm.h, type };
@@ -781,7 +794,7 @@
   function syncCalMode() {
     $$("[data-cal-mode]").forEach(b => b.classList.toggle("is-on", b.dataset.calMode === cal.mode));
     $('[data-view="kalender"]').dataset.mode = cal.mode;
-    calEl.dataset.view = cal.mode === "month" ? "month" : "time";
+    calEl.dataset.layout = cal.mode === "month" ? "month" : "time";
   }
 
   // Aktive Termine (ohne storniert / nicht erschienen)
@@ -954,7 +967,7 @@
         return `<button class="ev ev-${b.status}${b.source === "online" ? " is-online" : ""}${hgt < 44 ? " is-short" : ""}" data-open="${b.id}"
           style="top:${top}px;height:${hgt}px;left:calc(${col * w}% + 3px);width:calc(${w}% - 6px)"
           title="${esc(`${nice(b.time)}–${nice(endTime(b))} ${b.name} · ${b.title}${b.staff_id ? ` · bei ${staffName(b)}` : ""}`)}">
-          <b>${hgt < 44 ? `${nice(b.time)} ` : ""}${esc(b.name)}</b><span>${nice(b.time)}–${nice(endTime(b))} · ${withStaff(b)}</span></button>`;
+          ${b.source === "online" ? `<em class="ev-on">Online</em>` : ""}<b>${hgt < 44 ? `${nice(b.time)} ` : ""}${evName(b.name)}</b><span>${nice(b.time)}–${nice(endTime(b))} · ${withStaff(b)}</span></button>`;
       }).join("");
       const now = k === t0 && nowM > start && nowM < end ? `<div class="cal-now" style="top:${(nowM - start) * ppm}px"></div>` : "";
       return `<div class="cal-col${closed ? " is-closed" : ""}" data-day="${k}" data-start="${start}" style="height:${height}px">${off}${evs}${now}<div class="cal-ghost"></div></div>`;
@@ -1077,8 +1090,8 @@
           <div class="bgroup-rows">${list.map(b => `
             <button class="brow" data-open="${b.id}">
               <span class="brow-time">${nice(b.time)}<small>${dur(b.duration)}</small></span>
-              <span class="brow-name">${esc(b.name)}<small>${esc(b.phone || "ohne Telefon")}</small></span>
-              <span class="brow-svc">${withStaff(b)}</span>
+              <span class="brow-name">${esc(b.name)}<small>${esc(b.phone || "ohne Telefon")}${b.staff_id ? ` · <b class="brow-staff">bei ${esc(staffName(b))}</b>` : ""}</small></span>
+              <span class="brow-svc">${esc(b.title)}</span>
               <span class="pill pill-${b.status}">${STATUS[b.status]}</span>
               <span class="brow-src">${SOURCE[b.source] || ""}</span>
             </button>`).join("")}</div></div>`;
@@ -1354,6 +1367,8 @@
     try { STAFF = (await api("staff_list")).staff; } catch (_) { /* still */ }
     renderStaff();
   }
+  // im Kalender: bei schmalen Terminen (viele gleichzeitig) bleibt der Vorname sichtbar
+  const evName = n => { const [f, ...r] = String(n).trim().split(/\s+/); return `<i>${esc(f)}</i>${r.length ? `<i class="ev-ln"> ${esc(r.join(" "))}</i>` : ""}`; };
   function renderStaff() {
     const el = $("[data-staff-list]");
     el.innerHTML = STAFF.length ? STAFF.map(p => `
