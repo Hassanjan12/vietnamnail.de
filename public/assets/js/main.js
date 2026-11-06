@@ -79,6 +79,21 @@
   window.addEventListener("resize", updateHeader);
   updateHeader();
 
+  /* ---------------- Studio-Video im Kopfbereich ---------------- */
+  // Nicht bei „Bewegung reduzieren“ oder Datensparmodus – dann bleibt das Standbild
+  const heroVideo = $("[data-hero-video]");
+  if (heroVideo && !reduced && !(navigator.connection && navigator.connection.saveData)) {
+    heroVideo.muted = true;
+    heroVideo.src = heroVideo.dataset.src;
+    heroVideo.addEventListener("playing", () => heroVideo.classList.add("is-on"), { once: true });
+    const play = () => { const p = heroVideo.play(); if (p) p.catch(() => {}); };
+    play();
+    // nur laufen lassen, solange der Kopfbereich sichtbar ist (spart Akku)
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(([e]) => { if (e.isIntersecting) play(); else heroVideo.pause(); }).observe(heroVideo.parentElement);
+    }
+  }
+
   /* ---------------- Mobile-Menü ---------------- */
   const burger = $("[data-burger]");
   const menu = $("[data-menu]");
