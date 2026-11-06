@@ -3,7 +3,7 @@
 - Website: `public/` (statische Dateien, von Cloudflare direkt ausgeliefert)
 - Server: `src/worker.js` → `src/api/*` (nur `/api/*` läuft durch den Worker), gemeinsame Funktionen in `src/lib.js`
 - Datenbank: Cloudflare D1 (Binding `DB`), Tabellen werden automatisch angelegt
-- Admin: `https://DOMAIN/admin/`
+- Website: `https://vietnamnails-halle.de` · Admin: `https://vietnamnails-halle.de/admin/`
 
 ## Veröffentlichen (einmalig)
 1. **D1-Datenbank anlegen:** Dashboard → *Storage & Databases* → *D1* → *Create*,
@@ -39,6 +39,13 @@ npx wrangler@4.149.0 dev
 - Gleichzeitige Buchungen: Platzprüfung und Speichern in einer SQL-Anweisung – keine Überbuchung.
 - Sicherheits-Header und Content-Security-Policy: `public/_headers`
   (wird das Inline-Skript in `index.html` geändert, muss der `sha256`-Wert dort angepasst werden).
+
+## Admin-Passwort vergessen
+1. Cloudflare → *Storage & Databases* → *D1* → `vietnam-nails-eu` → *Console*.
+2. Ausführen: `DELETE FROM settings WHERE k = 'admin_hash'; DELETE FROM sessions;`
+3. **Sofort danach** `https://vietnamnails-halle.de/admin/` öffnen und ein neues Passwort festlegen
+   (bis dahin könnte jeder, der die Seite öffnet, das Passwort setzen).
+Termine, Kunden, Fotos und Einstellungen bleiben dabei erhalten.
 
 ## Datensicherung
 Admin → Einstellungen → „Termine exportieren“ (CSV für Excel), am besten monatlich.

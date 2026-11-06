@@ -712,7 +712,7 @@
       const f = d => `${ymd(d).replace(/-/g, "")}T${String(d.getHours()).padStart(2, "0")}${String(d.getMinutes()).padStart(2, "0")}00`;
       const ics = [
         "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Vietnam Nails//Termin//DE", "BEGIN:VEVENT",
-        `UID:${S.ref}@vietnamnail.de`,
+        `UID:${S.ref}@vietnamnails-halle.de`,
         `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z`,
         `DTSTART:${f(start)}`, `DTEND:${f(end)}`,
         `SUMMARY:Vietnam Nails – ${chosen().map(({ item }) => item.name).join(" + ")} `,
