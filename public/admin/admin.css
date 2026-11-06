@@ -434,9 +434,16 @@ select.lp-in { padding-right: 24px; background-image: linear-gradient(45deg, tra
 .staff-form { grid-template-columns: minmax(0, 1fr) auto; }
 .staff-form .btn { grid-column: auto; }
 .st-list { display: grid; gap: 8px; margin: 4px 0 10px; }
-.st-row { display: grid; grid-template-columns: minmax(0, 1fr) 92px 108px; gap: 10px; align-items: center; }
-.st-state { font-size: .82rem; color: var(--mute); }
+.st-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) 108px; column-gap: 10px; row-gap: 2px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.st-row:last-child { border-bottom: 0; }
+.st-row.is-saving { opacity: .5; pointer-events: none; }
+.st-pic { grid-row: 1 / 3; position: relative; width: 52px; height: 52px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; border: 1px dashed var(--line-2); background: var(--white); color: var(--mute); font-size: 1.3rem; cursor: pointer; }
+.st-pic:hover, .st-pic:focus-within { border-color: var(--black); color: var(--ink); }
+.st-pic img { width: 100%; height: 100%; object-fit: cover; }
 .st-row .lp-btn { width: 100%; height: 40px; }
+.st-sub { grid-column: 2 / -1; margin: 0; font-size: .8rem; color: var(--mute); }
+.st-link { padding: 0; border: 0; background: none; font: inherit; color: inherit; text-decoration: underline; cursor: pointer; }
+.st-link:hover { color: var(--danger); }
 .st-row.is-hidden .lp-in { color: var(--mute); text-decoration: line-through; }
 .st-list .empty { padding: 6px 0; text-align: left; font-size: 1rem; }
 .closed-list .empty { padding: 6px 0; text-align: left; font-size: 1rem; }

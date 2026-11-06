@@ -273,6 +273,11 @@ export const onRequestPost = handle(async ({ request, env }) => {
       await DB.prepare("INSERT INTO staff(name, hidden, sort, created_at) VALUES(?, 0, (SELECT COALESCE(MAX(sort), 0) + 1 FROM staff), ?)").bind(name, new Date().toISOString()).run();
       return json({ ok: true, staff: await staffList(DB) });
     }
+    case "staff_photo_delete": {
+      const id = Number(input.id || 0);
+      await DB.batch([DB.prepare("DELETE FROM staff_photo WHERE id = ?").bind(id), DB.prepare("UPDATE staff SET photo_v = 0 WHERE id = ?").bind(id)]);
+      return json({ ok: true, staff: await staffList(DB) });
+    }
     case "staff_update": {
       const id = Number(input.id || 0), name = clean(input.name, 40);
       if (!name) fail("Bitte einen Namen eingeben.");
@@ -342,6 +347,30 @@ export const onRequestPost = handle(async ({ request, env }) => {
  * Die Bilder werden schon im Browser verkleinert; hier nur prüfen und speichern.
  */
 const MAX_PHOTOS = 200;
+// Kurze Prüfung der Dateisignatur (JPEG: FF D8, WebP: RIFF….WEBP)
+const isImage = b => (b[0] === 0xFF && b[1] === 0xD8) || (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45);
+
+/** POST /api/admin/staff-photo (multipart: id, file) → Foto eines Mitarbeiters setzen */
+export const onStaffPhotoUpload = handle(async ({ request, env }) => {
+  if (request.headers.get("X-VN") !== "1") fail("Ungültige Anfrage.");
+  if (Number(request.headers.get("Content-Length") || 0) > 1_000_000) fail("Datei zu groß.", 413);
+  const DB = await db(env);
+  if (!(await isAuthed(DB, request))) fail("Bitte anmelden.", 401);
+  let form;
+  try { form = await request.formData(); } catch (_) { fail("Ungültige Datei."); }
+  const id = Number(form.get("id") || 0), file = form.get("file");
+  if (!file || typeof file === "string") fail("Bild fehlt.");
+  if (!TYPES.includes(file.type)) fail("Nur JPG oder WebP.");
+  if (file.size > 500_000) fail("Bild ist zu groß.", 413);
+  if (!(await DB.prepare("SELECT 1 FROM staff WHERE id = ?").bind(id).first())) fail("Person nicht gefunden.", 404);
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (!isImage(bytes)) fail("Die Datei ist kein gültiges Bild.");
+  await DB.batch([
+    DB.prepare("INSERT INTO staff_photo(id, mime, b64) VALUES(?, ?, ?) ON CONFLICT(id) DO UPDATE SET mime = excluded.mime, b64 = excluded.b64").bind(id, file.type, toB64(bytes)),
+    DB.prepare("UPDATE staff SET photo_v = photo_v + 1 WHERE id = ?").bind(id)
+  ]);
+  return json({ ok: true, staff: await staffList(DB) });
+});
 const TYPES = ["image/webp", "image/jpeg"];
 export const onPhotoUpload = handle(async ({ request, env }) => {
   if (request.headers.get("X-VN") !== "1") fail("Ungültige Anfrage.");
@@ -358,9 +387,7 @@ export const onPhotoUpload = handle(async ({ request, env }) => {
   const count = await DB.prepare("SELECT COUNT(*) AS n FROM photos").first();
   if ((count?.n || 0) >= MAX_PHOTOS) fail(`Maximal ${MAX_PHOTOS} Fotos. Bitte zuerst alte Fotos löschen.`);
   const [smB, lgB] = [new Uint8Array(await sm.arrayBuffer()), new Uint8Array(await lg.arrayBuffer())];
-  // Kurze Prüfung der Dateisignatur (JPEG: FF D8, WebP: RIFF….WEBP)
-  const ok = b => (b[0] === 0xFF && b[1] === 0xD8) || (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45);
-  if (!ok(smB) || !ok(lgB)) fail("Die Datei ist kein gültiges Bild.");
+  if (!isImage(smB) || !isImage(lgB)) fail("Die Datei ist kein gültiges Bild.");
   const cat = Object.keys(PHOTO_CATS).includes(String(form.get("cat"))) ? String(form.get("cat")) : "elegant";
   const w = Math.max(1, Math.min(4000, Number(form.get("w")) || 700)), h = Math.max(1, Math.min(4000, Number(form.get("h")) || 900));
   // alles in einem Schritt: entweder Foto + beide Größen oder gar nichts (keine leeren Einträge)

@@ -512,17 +512,52 @@
       $$("[data-slot]", els.slots).forEach(x => x.setAttribute("aria-pressed", String(x === b)));
       renderSummary(); clearErr();
     });
+    const EYE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
     const renderStaff = () => {
       els.staff.hidden = !STAFF.length;
       if (!STAFF.length) return;
-      els.staffRow.innerHTML = [{ id: null, name: "Egal", sub: "wer frei ist" }, ...STAFF].map(p =>
-        `<button type="button" class="stf" role="radio" aria-checked="${S.staff === p.id}" data-staff="${p.id ?? ""}">${esc(p.name)}${p.sub ? `<small>${p.sub}</small>` : ""}</button>`).join("");
+      els.staffRow.innerHTML = [{ id: null, name: "Egal", sub: "wer frei ist" }, ...STAFF].map(p => {
+        const chip = `<button type="button" class="stf${p.photo ? " has-eye" : ""}" role="radio" aria-checked="${S.staff === p.id}" data-staff="${p.id ?? ""}">${esc(p.name)}${p.sub ? `<small>${p.sub}</small>` : ""}</button>`;
+        // Augen-Symbol: Foto ansehen (manche Kundinnen kennen das Gesicht, nicht den Namen)
+        return p.photo ? `<span class="stf-wrap">${chip}<button type="button" class="stf-eye" data-eye="${p.id}" aria-label="Foto von ${esc(p.name)} ansehen">${EYE}</button></span>` : chip;
+      }).join("");
     };
-    els.staffRow.addEventListener("click", e => {
-      const b = e.target.closest("[data-staff]"); if (!b) return;
-      S.staff = b.dataset.staff ? Number(b.dataset.staff) : null;
+    // Foto-Fenster
+    const pop = document.createElement("div");
+    pop.className = "stf-pop";
+    pop.hidden = true;
+    pop.setAttribute("role", "dialog");
+    pop.setAttribute("aria-modal", "true");
+    pop.innerHTML = `<div class="stf-card"><button type="button" class="stf-pop-x" data-pop-close aria-label="Schließen"></button>
+      <img alt="" data-pop-img><p class="stf-pop-name" data-pop-name></p>
+      <button type="button" class="btn-solid stf-pop-pick" data-pop-pick></button></div>`;
+    bk.appendChild(pop);
+    let popFor = null, popReturn = null;
+    const popOpen = (p, trigger) => {
+      popFor = p; popReturn = trigger;
+      const img = $("[data-pop-img]", pop);
+      img.src = p.photo; img.alt = `Foto von ${p.name}`;
+      $("[data-pop-name]", pop).textContent = p.name;
+      $("[data-pop-pick]", pop).textContent = S.staff === p.id ? "Ausgewählt" : `${p.name} wählen`;
+      pop.setAttribute("aria-label", `Foto von ${p.name}`);
+      pop.hidden = false;
+      $("[data-pop-close]", pop).focus();
+    };
+    const popClose = () => { pop.hidden = true; if (popReturn && document.contains(popReturn)) popReturn.focus(); };
+    const pickStaff = id => {
+      S.staff = id;
       if (S.time && S.date && !slotsFor(S.date).includes(S.time)) S.time = null;
       renderStaff(); renderCal(); renderSlots(); renderSummary(); clearErr();
+    };
+    pop.addEventListener("click", e => {
+      if (e.target === pop || e.target.closest("[data-pop-close]")) return popClose();
+      if (e.target.closest("[data-pop-pick]") && popFor) { popReturn = null; pop.hidden = true; pickStaff(popFor.id); }
+    });
+    els.staffRow.addEventListener("click", e => {
+      const eye = e.target.closest("[data-eye]");
+      if (eye) { const p = STAFF.find(x => x.id === Number(eye.dataset.eye)); if (p) popOpen(p, eye); return; }
+      const b = e.target.closest("[data-staff]"); if (!b) return;
+      pickStaff(b.dataset.staff ? Number(b.dataset.staff) : null);
     });
     els.prev.addEventListener("click", () => { S.month = new Date(S.month.getFullYear(), S.month.getMonth() - 1, 1); renderCal(); });
     els.next.addEventListener("click", () => { S.month = new Date(S.month.getFullYear(), S.month.getMonth() + 1, 1); renderCal(); });
@@ -772,6 +807,11 @@
         return;
       }
       if (bk.hidden) { if (e.key === "Escape" && burger.getAttribute("aria-expanded") === "true") setMenu(false); return; }
+      if (!pop.hidden) {
+        if (e.key === "Escape") popClose();
+        if (e.key === "Tab") { e.preventDefault(); const f = [...pop.querySelectorAll("button")]; f[(f.indexOf(document.activeElement) + 1) % f.length].focus(); }
+        return;
+      }
       if (e.key === "Escape") { els.aside.classList.contains("is-open") ? setSheet(false) : closeBk(false); }
       if (e.key === "Tab") {
         const f = $$("button:not([disabled]), input, textarea, a[href]", bk).filter(x => x.offsetParent !== null);

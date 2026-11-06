@@ -6,6 +6,21 @@ export const onGalleryGet = handle(async ({ env }) => {
   return json({ ok: true, photos: await galleryList(DB) });
 });
 
+/** GET /api/staff-photo/:id → Foto eines Mitarbeiters (Adresse enthält ?v=…, daher dauerhaft zwischenspeicherbar) */
+export async function onStaffPhotoGet({ request, env }) {
+  const m = new URL(request.url).pathname.match(/^\/api\/staff-photo\/(\d+)$/);
+  if (!m) return new Response("Nicht gefunden", { status: 404 });
+  try {
+    const DB = await db(env);
+    const r = await DB.prepare("SELECT mime, b64 FROM staff_photo WHERE id = ?").bind(Number(m[1])).first();
+    if (!r) return new Response("Nicht gefunden", { status: 404, headers: { "Cache-Control": "no-store" } });
+    return new Response(fromB64(r.b64), { headers: { "Content-Type": r.mime, "Cache-Control": "public, max-age=31536000, immutable", "X-Content-Type-Options": "nosniff" } });
+  } catch (e) {
+    console.error("staff photo", e);
+    return new Response("Fehler", { status: 500 });
+  }
+}
+
 export async function onPhotoGet({ request, env, ctx }) {
   const m = new URL(request.url).pathname.match(/^\/api\/photo\/(\d+)\/(sm|lg)$/);
   if (!m) return new Response("Nicht gefunden", { status: 404 });

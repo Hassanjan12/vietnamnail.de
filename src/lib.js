@@ -112,7 +112,9 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS photo_data (id INTEGER NOT NULL, size TEXT NOT NULL, b64 TEXT NOT NULL, PRIMARY KEY (id, size))`,
   // Mitarbeiter: nur Name; ausgeblendete bleiben für alte Termine erhalten
   `CREATE TABLE IF NOT EXISTS staff (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, hidden INTEGER NOT NULL DEFAULT 0,
-    sort INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)`
+    sort INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)`,
+  // Foto je Mitarbeiter (getrennt, damit die Team-Liste klein bleibt)
+  `CREATE TABLE IF NOT EXISTS staff_photo (id INTEGER PRIMARY KEY, mime TEXT NOT NULL, b64 TEXT NOT NULL)`
 ];
 
 /* ---------- Galerie ---------- */
@@ -192,6 +194,9 @@ async function migrate(DB) {
   if (!has("price_value")) alter.push(DB.prepare("ALTER TABLE bookings ADD COLUMN price_value INTEGER NOT NULL DEFAULT 0"));
   // Wunsch-Mitarbeiter (NULL = kein Wunsch)
   if (!has("staff_id")) alter.push(DB.prepare("ALTER TABLE bookings ADD COLUMN staff_id INTEGER"));
+  const { results: scols } = await DB.prepare("PRAGMA table_info(staff)").all();
+  // Versionsnummer des Fotos (0 = kein Foto); ändert die Bild-Adresse bei jedem neuen Foto
+  if (!scols.some(c => c.name === "photo_v")) alter.push(DB.prepare("ALTER TABLE staff ADD COLUMN photo_v INTEGER NOT NULL DEFAULT 0"));
   if (alter.length) await DB.batch(alter);
   await DB.prepare("CREATE INDEX IF NOT EXISTS idx_bookings_customer ON bookings(customer_key)").run();
   for (let round = 0; round < 20; round++) {
@@ -280,8 +285,9 @@ export async function busy(DB, date, excludeId = null) {
 /* ---------- Mitarbeiter ---------- */
 
 export async function staffList(DB) {
-  const { results } = await DB.prepare("SELECT id, name, hidden FROM staff ORDER BY sort, id").all();
-  return results.map(r => ({ id: Number(r.id), name: r.name, hidden: !!r.hidden }));
+  const { results } = await DB.prepare("SELECT id, name, hidden, photo_v FROM staff ORDER BY sort, id").all();
+  return results.map(r => ({ id: Number(r.id), name: r.name, hidden: !!r.hidden,
+    photo: r.photo_v ? `/api/staff-photo/${r.id}?v=${r.photo_v}` : null }));
 }
 /** Gleichzeitige Termine = Zahl der sichtbaren Mitarbeiter; ohne Mitarbeiter die Plätze aus salon.json */
 export const capacityOf = staff => staff.filter(s => !s.hidden).length || Math.max(1, Number(salon.capacity) || 1);

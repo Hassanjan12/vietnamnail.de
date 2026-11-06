@@ -4,8 +4,8 @@ import { handle, json, db, getCatalog, publicCatalog, staffList, salon } from ".
 export const onRequestGet = handle(async ({ env }) => {
   const DB = await db(env);
   const { categories, extras } = publicCatalog(await getCatalog(DB));
-  // nur sichtbare Mitarbeiter, nur Name (für die Auswahl bei der Buchung)
-  const staff = (await staffList(DB)).filter(s => !s.hidden).map(({ id, name }) => ({ id, name }));
+  // nur sichtbare Mitarbeiter: Name und ggf. Foto (für die Auswahl bei der Buchung)
+  const staff = (await staffList(DB)).filter(s => !s.hidden).map(({ id, name, photo }) => ({ id, name, photo }));
   const { name, whatsapp, phone, address, hours, closedDates, slotStep, leadMinutes, daysAhead, capacity } = salon;
   return json({ ok: true, name, whatsapp, phone, address, hours, closedDates, slotStep, leadMinutes, daysAhead, capacity, categories, extras, staff });
 });

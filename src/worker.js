@@ -16,12 +16,17 @@ const ROUTES = {
   "/api/admin": { POST: admin.onRequestPost },
   "/api/catalog": { GET: catalog.onRequestGet },
   "/api/gallery": { GET: gallery.onGalleryGet },
-  "/api/admin/photo": { POST: admin.onPhotoUpload }
+  "/api/admin/photo": { POST: admin.onPhotoUpload },
+  "/api/admin/staff-photo": { POST: admin.onStaffPhotoUpload }
 };
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    if (url.pathname.startsWith("/api/staff-photo/")) {
+      if (request.method !== "GET" && request.method !== "HEAD") return new Response(null, { status: 405, headers: { Allow: "GET" } });
+      return gallery.onStaffPhotoGet({ request, env });
+    }
     if (url.pathname.startsWith("/api/photo/")) {
       if (request.method !== "GET" && request.method !== "HEAD") return new Response(null, { status: 405, headers: { Allow: "GET" } });
       return gallery.onPhotoGet({ request, env, ctx });

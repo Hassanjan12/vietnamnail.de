@@ -1373,9 +1373,13 @@
     const el = $("[data-staff-list]");
     el.innerHTML = STAFF.length ? STAFF.map(p => `
       <div class="st-row${p.hidden ? " is-hidden" : ""}" data-id="${p.id}">
+        <label class="st-pic" title="${p.photo ? "Foto ändern" : "Foto hinzufügen"}">
+          ${p.photo ? `<img src="${esc(p.photo)}" alt="Foto von ${esc(p.name)}">` : `<span aria-hidden="true">+</span>`}
+          <input type="file" accept="image/jpeg,image/png,image/webp,image/*" class="vh-input" data-st-file aria-label="Foto für ${esc(p.name)} wählen">
+        </label>
         <input class="lp-in" value="${esc(p.name)}" maxlength="40" aria-label="Name" data-st-name>
-        <span class="st-state">${p.hidden ? "ausgeblendet" : "buchbar"}</span>
         <button type="button" class="lp-btn" data-st-toggle>${p.hidden ? "Einblenden" : "Ausblenden"}</button>
+        <p class="st-sub"><span>${p.hidden ? "ausgeblendet" : "buchbar"}</span>${p.photo ? ` · <button type="button" class="st-link" data-st-unphoto>Foto entfernen</button>` : " · ohne Foto"}</p>
       </div>`).join("") : `<p class="empty">Noch niemand eingetragen – online gelten ${SALON.capacity} Plätze gleichzeitig.</p>`;
     const n = STAFF.filter(p => !p.hidden).length;
     $("[data-staff-cap]").textContent = n ? `Gleichzeitig online buchbar: ${n} ${n === 1 ? "Termin" : "Termine"} (= sichtbare Personen).` : "";
@@ -1397,7 +1401,31 @@
     const p = STAFF.find(x => x.id === Number(row.dataset.id));
     staffCall("staff_update", { id: p.id, name: e.target.value.trim(), hidden: p.hidden }, "Gespeichert");
   });
+  // Foto für eine Person: im Browser verkleinern (wie in der Galerie) und hochladen
+  $("[data-staff-list]").addEventListener("change", async e => {
+    if (!e.target.matches("[data-st-file]") || !e.target.files[0]) return;
+    const row = e.target.closest(".st-row"), p = STAFF.find(x => x.id === Number(row.dataset.id));
+    const err = $("[data-staff-err]");
+    err.textContent = "";
+    row.classList.add("is-saving");
+    try {
+      const ph = await shrinkPhoto(e.target.files[0]);
+      const fd = new FormData();
+      fd.append("id", p.id); fd.append("file", ph.sm, ph.type === "image/webp" ? "foto.webp" : "foto.jpg");
+      const res = await fetch("/api/admin/staff-photo", { method: "POST", credentials: "same-origin", headers: { "X-VN": "1" }, body: fd });
+      const j = await res.json().catch(() => ({}));
+      if (res.status === 401) { showAuth(false); return; }
+      if (!res.ok || !j.ok) throw new Error(j.error || "Hochladen fehlgeschlagen.");
+      STAFF = j.staff; renderStaff(); toast(`Foto von ${p.name} gespeichert`);
+    } catch (x) { err.textContent = x.message; row.classList.remove("is-saving"); }
+  });
   $("[data-staff-list]").addEventListener("click", e => {
+    const u = e.target.closest("[data-st-unphoto]");
+    if (u) {
+      const p = STAFF.find(x => x.id === Number(u.closest(".st-row").dataset.id));
+      if (confirm(`Foto von ${p.name} entfernen?`)) staffCall("staff_photo_delete", { id: p.id }, "Foto entfernt");
+      return;
+    }
     const b = e.target.closest("[data-st-toggle]"); if (!b) return;
     const p = STAFF.find(x => x.id === Number(b.closest(".st-row").dataset.id));
     staffCall("staff_update", { id: p.id, name: p.name, hidden: !p.hidden }, p.hidden ? `${p.name} ist wieder buchbar` : `${p.name} ausgeblendet`);
