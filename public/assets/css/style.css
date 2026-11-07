@@ -747,7 +747,10 @@ h2 em, .hero-title em, .ft-claim em { color: var(--green-600); }
 .sec-dark, .marquee, .pedi-card-dark { background: var(--green-950); }
 .marquee { border-top-color: rgba(169, 205, 179, .18); }
 .cta { background: var(--green-950); }
-.cta-bg::after { background: radial-gradient(ellipse at center, rgba(13, 36, 26, .25), rgba(13, 36, 26, .96) 75%); }
+/* Hintergrund: die echte Pflanzenwand aus dem Studio */
+.cta-bg { opacity: .75; }
+.cta-bg img { filter: saturate(.85) brightness(.75); }
+.cta-bg::after { background: radial-gradient(ellipse at center, rgba(13, 36, 26, .45), rgba(13, 36, 26, .94) 78%); }
 .ig { background: var(--sage-50); border-top-color: #dde7de; }
 
 /* Knöpfe */
