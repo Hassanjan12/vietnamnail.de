@@ -748,9 +748,12 @@ h2 em, .hero-title em, .ft-claim em { color: var(--green-600); }
 .marquee { border-top-color: rgba(169, 205, 179, .18); }
 .cta { background: var(--green-950); }
 /* Hintergrund: die echte Pflanzenwand aus dem Studio */
-.cta-bg { opacity: .75; }
-.cta-bg img { filter: saturate(.85) brightness(.75); }
-.cta-bg::after { background: radial-gradient(ellipse at center, rgba(13, 36, 26, .45), rgba(13, 36, 26, .94) 78%); }
+/* Pflanzen gut sichtbar; nur hinter dem Text abgedunkelt, damit er lesbar bleibt */
+.cta-bg { opacity: 1; }
+.cta-bg img { filter: saturate(1.05) brightness(.82); }
+.cta-bg::after { background: radial-gradient(ellipse 60% 55% at center, rgba(13, 36, 26, .72), rgba(13, 36, 26, .45) 70%, rgba(13, 36, 26, .3)); }
+.cta-inner { text-shadow: 0 2px 18px rgba(5, 18, 12, .55); }
+.cta-inner .btn-solid { text-shadow: none; }
 .ig { background: var(--sage-50); border-top-color: #dde7de; }
 
 /* Knöpfe */
