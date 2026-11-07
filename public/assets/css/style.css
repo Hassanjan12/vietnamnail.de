@@ -722,3 +722,51 @@ h2 em, h1 em { font-weight: 400; }
   .marquee-track { animation: none; }
   .js .reveal, .js .reveal-img { opacity: 1; transform: none; clip-path: none; }
 }
+
+/* ==========================================================================
+   Grüne Akzente – Farbe des Studios (Pflanzenwand, Grün im Laden)
+   Schwarz/Weiß bleibt die Basis; Grün setzt gezielte Akzente.
+   ========================================================================== */
+:root {
+  --green-950: #0d241a;   /* tiefes Waldgrün: dunkle Flächen */
+  --green-800: #1c4532;   /* Smaragd: Knöpfe, Auswahl */
+  --green-600: #2e6a4b;   /* Text-Akzente auf Hell */
+  --sage: #a9cdb3;        /* Salbei: Akzente auf Dunkel */
+  --sage-50: #eef3ee;     /* zarter Salbei-Ton für helle Flächen */
+}
+::selection { background: var(--green-800); color: var(--white); }
+
+/* Kursive Wörter in Überschriften und Kapitel-Labels */
+h2 em, .hero-title em, .ft-claim em { color: var(--green-600); }
+.sec-dark h2 em, .cta h2 em, .hero-title em, .ft-claim em, .map-addr em { color: var(--sage); }
+.sec .label, .ig .label, .intro .label { color: var(--green-600); }
+.sec-dark .label, .cta .label, .hero .kicker { color: var(--sage); }
+.menu-num, .process span, .intro-text em { color: var(--green-600); }
+
+/* Dunkle Flächen in Waldgrün */
+.sec-dark, .marquee, .pedi-card-dark { background: var(--green-950); }
+.marquee { border-top-color: rgba(169, 205, 179, .18); }
+.cta { background: var(--green-950); }
+.cta-bg::after { background: radial-gradient(ellipse at center, rgba(13, 36, 26, .25), rgba(13, 36, 26, .96) 75%); }
+.ig { background: var(--sage-50); border-top-color: #dde7de; }
+
+/* Knöpfe */
+.btn-solid:not(.btn-invert) { background: var(--green-800); border-color: var(--green-800); }
+@media (hover: hover) { .btn-solid:not(.btn-invert):hover { background: transparent; color: var(--green-800); } }
+
+/* „Jetzt geöffnet“-Punkt */
+.dot.is-open { background: #7fd49a; box-shadow: 0 0 0 4px rgba(127, 212, 154, .2); }
+
+/* Buchung: Auswahl in Smaragd */
+.bk-progress span,
+.bk-tab[aria-selected="true"], .svc-opt[aria-pressed="true"], .ex[aria-pressed="true"],
+.stf[aria-checked="true"], .day.is-sel, .day.is-sel:hover, .slot[aria-pressed="true"],
+.bk-radio input:checked + span, .bk-consent input:checked { background: var(--green-800); border-color: var(--green-800); color: var(--white); }
+.svc-opt[aria-pressed="true"] .tick::after { border-color: var(--green-800); }
+.svc-opt[aria-pressed="true"] .svc-opt-meta, .ex[aria-pressed="true"] b, .stf[aria-checked="true"] small { color: var(--sage); }
+.sum { background: var(--green-950); }
+.done-mark { border-color: var(--green-600); }
+.done-mark::after { border-color: var(--green-600); }
+
+/* Mobile: schwebender „Termin buchen“-Knopf in Smaragd */
+@media (max-width: 900px) { .fab { background: var(--green-800); } }
