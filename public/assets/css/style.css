@@ -776,3 +776,16 @@ h2 em, .hero-title em, .ft-claim em { color: var(--green-600); }
 
 /* Mobile: schwebender „Termin buchen“-Knopf in Smaragd */
 @media (max-width: 900px) { .fab { background: var(--green-800); } }
+
+/* Feine grüne Details */
+.marquee-track em { -webkit-text-stroke: 1px rgba(169, 205, 179, .85); }
+.marquee-track b { border-color: var(--sage); background: rgba(169, 205, 179, .22); }
+.pillars span { color: var(--green-600); }
+.filters button:hover, .filters button.is-active { color: var(--sage); }
+.hours tr.is-today td:first-child::after { border-color: var(--green-600); color: var(--green-600); }
+.ig-tile::after { background: rgba(13, 36, 26, .45); }
+[data-mode="light"] .btn-line:hover, .btn-line-dark:hover { background: var(--green-800); border-color: var(--green-800); color: var(--white); }
+/* großer Schriftzug im Fußbereich: von Weiß in Salbei */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .ft-word { background: linear-gradient(180deg, var(--white) 25%, var(--sage) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+}
