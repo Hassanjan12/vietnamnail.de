@@ -124,6 +124,30 @@
   }
   $$(".reveal, .reveal-img").forEach(el => observeReveal(el));
 
+  /* ---------------- Mehr Bewegung: Linien, Parallaxe, Scroll-Leiste ---------------- */
+  $$(".pillars li, .gallery, .ig-grid").forEach(el => observeReveal(el));
+  const scrollBar = document.createElement("div");
+  scrollBar.className = "scroll-bar";
+  scrollBar.setAttribute("aria-hidden", "true");
+  document.body.appendChild(scrollBar);
+  // Parallaxe nur am Computer und nicht bei „Bewegung reduzieren“
+  const pxEls = !reduced && window.matchMedia("(min-width: 901px) and (hover: hover)").matches ? $$("[data-parallax]") : [];
+  let fxTick = false;
+  const scrollFx = () => {
+    fxTick = false;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    scrollBar.style.transform = `scaleX(${max > 0 ? Math.min(1, window.scrollY / max) : 0})`;
+    pxEls.forEach(el => {
+      const r = el.parentElement.getBoundingClientRect();
+      if (r.bottom < -200 || r.top > window.innerHeight + 200) return;
+      const off = (r.top + r.height / 2 - window.innerHeight / 2) * Number(el.dataset.parallax);
+      el.style.transform = `translate3d(0, ${off.toFixed(1)}px, 0)`;
+    });
+  };
+  window.addEventListener("scroll", () => { if (!fxTick) { fxTick = true; requestAnimationFrame(scrollFx); } }, { passive: true });
+  window.addEventListener("resize", scrollFx);
+  scrollFx();
+
   /* ---------------- Öffnungszeiten ---------------- */
   const dow = now.getDay();
   function initHours() {
@@ -243,6 +267,7 @@
     }
     menuEl.innerHTML = html;
     $$(".reveal", menuEl).forEach(el => observeReveal(el));
+    $$(".menu-block", menuEl).forEach(el => observeReveal(el)); // Linie zeichnen, Zeilen nacheinander
   }
 
   /* ---------------- Galerie & Lightbox ---------------- */
@@ -270,7 +295,7 @@
   function renderGallery(list) {
     PHOTOS = list;
     gal.innerHTML = list.map((p, i) => `
-      <button class="g reveal is-in" data-cat="${esc(p.cat)}" data-i="${i}" aria-label="${esc(photoAlt(p))} – vergrößern">
+      <button class="g reveal is-in" style="--i:${i % 9}" data-cat="${esc(p.cat)}" data-i="${i}" aria-label="${esc(photoAlt(p))} – vergrößern">
         <img src="${esc(p.sm)}" alt="${esc(photoAlt(p))}" loading="lazy" width="${Number(p.w) || 700}" height="${Number(p.h) || 900}">
         ${p.title || p.sub ? `<span class="g-cap">${esc(p.title)}<b>${esc(p.sub)}</b></span>` : ""}
       </button>`).join("");
