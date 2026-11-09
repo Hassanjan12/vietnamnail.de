@@ -108,6 +108,29 @@
   burger.addEventListener("click", () => setMenu(burger.getAttribute("aria-expanded") !== "true"));
   $$("a", menu).forEach(a => a.addEventListener("click", () => setMenu(false)));
 
+  /* ---------------- Überschriften: Wort für Wort einblenden ---------------- */
+  // Text bleibt unverändert lesbar (auch für Screenreader); nur jedes Wort bekommt eine Hülle
+  if (!reduced) {
+    $$(".sec h2.reveal, .cta-title").forEach(h => {
+      let i = 0;
+      const walk = node => [...node.childNodes].forEach(n => {
+        if (n.nodeType === 3) {
+          const frag = document.createDocumentFragment();
+          n.textContent.split(/(\s+)/).forEach(part => {
+            if (!part) return;
+            if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); return; }
+            const w = document.createElement("span"), inner = document.createElement("span");
+            w.className = "w"; inner.textContent = part; inner.style.setProperty("--wi", i++);
+            w.appendChild(inner); frag.appendChild(w);
+          });
+          n.replaceWith(frag);
+        } else if (n.nodeType === 1) walk(n);
+      });
+      walk(h);
+      h.classList.add("is-split");
+    });
+  }
+
   /* ---------------- Reveal on scroll ---------------- */
   let observeReveal = el => el.classList.add("is-in");
   if ("IntersectionObserver" in window && !reduced) {

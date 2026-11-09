@@ -870,3 +870,55 @@ h2.reveal.is-in em::after { transform: scaleX(1); }
   .menu-block::before, .process li::before, .c-item::before, .pillars li::before, .menu-cta::before, h2.reveal em::after { transform: scaleX(1); }
   .scroll-bar { display: none; }
 }
+
+
+/* ==========================================================================
+   Noch mehr Leben
+   ========================================================================== */
+/* Überschriften: Wörter steigen nacheinander aus einer Maske auf */
+.js h2.is-split.reveal { opacity: 1; transform: none; }
+.w { display: inline-block; overflow: hidden; vertical-align: top; padding: 0 .08em .14em 0; margin: 0 -.08em -.14em 0; }
+.w > span { display: inline-block; transform: translateY(112%); transition: transform 1.15s var(--ease); transition-delay: calc(var(--wi, 0) * 95ms); }
+.is-in .w > span { transform: none; }
+h2.is-split em::after { transition-delay: .9s; }
+
+/* Fotos: grüner Vorhang zieht sich nach oben zurück */
+@keyframes curtain { from { transform: scaleY(1); } to { transform: scaleY(0); } }
+.g::before, .ig-tile::before { content: ""; position: absolute; inset: 0; z-index: 3; background: var(--green-800); transform-origin: 50% 0; transform: scaleY(0); pointer-events: none; }
+.gallery.is-in .g::before { animation: curtain 1.15s var(--ease-io) both; animation-delay: calc(var(--i, 0) * 70ms + .15s); }
+.ig-grid.is-in .ig-tile::before { animation: curtain 1.15s var(--ease-io) both; animation-delay: .15s; }
+.ig-grid.is-in .ig-tile:nth-child(2)::before { animation-delay: .25s; }
+.ig-grid.is-in .ig-tile:nth-child(3)::before { animation-delay: .35s; }
+.ig-grid.is-in .ig-tile:nth-child(4)::before { animation-delay: .45s; }
+
+/* Zweites Laufband in Gegenrichtung */
+.marquee-track.is-rev { margin-top: clamp(10px, 1.6vw, 20px); font-size: clamp(1.7rem, 3.8vw, 3.6rem); animation: marq 40s linear infinite reverse; opacity: .92; }
+.marquee-track.is-rev span:not(:has(em)) { color: var(--sage); }
+
+/* „Termin.“ mit sanftem Glanz */
+@keyframes sheen { 0%, 55% { background-position: 120% 0; } 100% { background-position: -20% 0; } }
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .cta-title em .w > span, .cta-title.is-split em { -webkit-background-clip: text; background-clip: text; }
+  .cta-title em .w > span { background-image: linear-gradient(110deg, var(--sage) 40%, #f1faf3 50%, var(--sage) 60%); background-size: 250% 100%; color: transparent; animation: sheen 5.5s ease-in-out 1.6s infinite; }
+  .cta-title em::after { background: var(--sage); }
+}
+
+/* Pfeile in den Buchungs-Knöpfen stupsen kurz an */
+@keyframes nudge { 0%, 72%, 100% { transform: none; } 80% { transform: translateX(7px); } 88% { transform: none; } 94% { transform: translateX(4px); } }
+.cta .arr, .menu-cta .arr { animation: nudge 3.2s ease-in-out 1s infinite; }
+
+/* Pediküre-Karten heben sich beim Überfahren */
+@media (hover: hover) and (pointer: fine) {
+  .js .menu-block.is-in .pedi-card:hover { transform: translateY(-8px); box-shadow: 0 30px 60px -30px rgba(13, 36, 26, .45); border-color: var(--green-600); transition-delay: 0s; }
+}
+
+/* Mobil: „Termin buchen“ leuchtet ein paar Mal sanft auf */
+@keyframes fabGlow { 0% { box-shadow: 0 0 0 0 rgba(127, 212, 154, .5); } 70%, 100% { box-shadow: 0 0 0 16px rgba(127, 212, 154, 0); } }
+@media (max-width: 900px) { .fab:not(.is-hidden) { animation: fabGlow 2.4s ease-out 1.5s 4; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .w > span { transform: none; }
+  .g::before, .ig-tile::before { display: none; }
+  .marquee-track.is-rev { animation: none; }
+  .cta-title em .w > span { animation: none; }
+}
