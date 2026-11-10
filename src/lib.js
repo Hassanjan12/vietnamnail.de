@@ -115,7 +115,7 @@ const SCHEMA = [
     sort INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)`,
   // Foto je Mitarbeiter (getrennt, damit die Team-Liste klein bleibt)
   `CREATE TABLE IF NOT EXISTS staff_photo (id INTEGER PRIMARY KEY, mime TEXT NOT NULL, b64 TEXT NOT NULL)`,
-  // Wunschbilder der Kundinnen (nur für den Termin; werden mit dem Termin gelöscht)
+  // Wunschbilder der Kundinnen (nur für den Termin; werden 1 Woche danach gelöscht)
   `CREATE TABLE IF NOT EXISTS booking_photos (id INTEGER PRIMARY KEY AUTOINCREMENT, booking_id INTEGER NOT NULL, mime TEXT NOT NULL,
     b64 TEXT NOT NULL, created_at TEXT NOT NULL)`,
   `CREATE INDEX IF NOT EXISTS idx_bphotos ON booking_photos(booking_id)`
@@ -238,7 +238,7 @@ export async function setSetting(DB, k, v) {
   return v;
 }
 
-/** Einmal täglich: Termine nach 12 Monaten, Statistik nach 14 Monaten, alte Sitzungen und Zähler löschen. */
+/** Einmal täglich: Wunschbilder 1 Woche nach dem Termin, Termine nach 12 Monaten, Statistik nach 14 Monaten, alte Sitzungen und Zähler löschen. */
 async function cleanup(DB) {
   const today = berlinNow().date;
   if (await getSetting(DB, "cleanup_day") === today) return;
@@ -252,6 +252,8 @@ async function cleanup(DB) {
     // Kundenkarten ohne verbleibende Termine entfernen (gleiche 12-Monats-Frist)
     DB.prepare("DELETE FROM customers WHERE ckey NOT IN (SELECT customer_key FROM bookings WHERE customer_key IS NOT NULL)"),
     DB.prepare("DELETE FROM photo_data WHERE id NOT IN (SELECT id FROM photos)"),
+    // Wunschbilder: 1 Woche nach dem Termin löschen (spart Speicherplatz); der Termin selbst bleibt
+    DB.prepare("DELETE FROM booking_photos WHERE booking_id IN (SELECT id FROM bookings WHERE date < ?)").bind(addDays(today, -7)),
     DB.prepare("DELETE FROM booking_photos WHERE booking_id NOT IN (SELECT id FROM bookings)")
   ]);
 }

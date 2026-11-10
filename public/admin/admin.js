@@ -1133,7 +1133,7 @@
       b.note ? ["Notiz", esc(b.note).replace(/\n/g, "<br>")] : null,
       ["Eingegangen", new Date(b.created_at).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })]
     ].filter(Boolean);
-    if (b.photo_n) rows.splice(1, 0, ["Wunschbild", `<div class="dr-pics" data-dr-pics><span class="muted">wird geladen …</span></div>`]);
+    if (b.photo_n) rows.splice(1, 0, ["Wunschbild", `<div class="dr-pics" data-dr-pics><span class="muted">wird geladen …</span></div><p class="muted small">Wird 1 Woche nach dem Termin automatisch gelöscht.</p>`]);
     $("[data-dr-kv]").innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
     if (b.photo_n) loadWishPics(b);
     const active = b.status === "confirmed" || b.status === "pending";
