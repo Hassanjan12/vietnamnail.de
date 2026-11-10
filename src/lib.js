@@ -114,7 +114,11 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS staff (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, hidden INTEGER NOT NULL DEFAULT 0,
     sort INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)`,
   // Foto je Mitarbeiter (getrennt, damit die Team-Liste klein bleibt)
-  `CREATE TABLE IF NOT EXISTS staff_photo (id INTEGER PRIMARY KEY, mime TEXT NOT NULL, b64 TEXT NOT NULL)`
+  `CREATE TABLE IF NOT EXISTS staff_photo (id INTEGER PRIMARY KEY, mime TEXT NOT NULL, b64 TEXT NOT NULL)`,
+  // Wunschbilder der Kundinnen (nur für den Termin; werden mit dem Termin gelöscht)
+  `CREATE TABLE IF NOT EXISTS booking_photos (id INTEGER PRIMARY KEY AUTOINCREMENT, booking_id INTEGER NOT NULL, mime TEXT NOT NULL,
+    b64 TEXT NOT NULL, created_at TEXT NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS idx_bphotos ON booking_photos(booking_id)`
 ];
 
 /* ---------- Galerie ---------- */
@@ -247,7 +251,8 @@ async function cleanup(DB) {
     DB.prepare("DELETE FROM hits WHERE ts < ?").bind(now - 86400),
     // Kundenkarten ohne verbleibende Termine entfernen (gleiche 12-Monats-Frist)
     DB.prepare("DELETE FROM customers WHERE ckey NOT IN (SELECT customer_key FROM bookings WHERE customer_key IS NOT NULL)"),
-    DB.prepare("DELETE FROM photo_data WHERE id NOT IN (SELECT id FROM photos)")
+    DB.prepare("DELETE FROM photo_data WHERE id NOT IN (SELECT id FROM photos)"),
+    DB.prepare("DELETE FROM booking_photos WHERE booking_id NOT IN (SELECT id FROM bookings)")
   ]);
 }
 
@@ -413,6 +418,29 @@ export function newRef() {
   return "VN-" + [...r].map(b => chars[b % chars.length]).join("");
 }
 
+/** Spalte mit der Zahl der Wunschbilder eines Termins (für Listen im Admin) */
+export const PHOTO_N = "(SELECT COUNT(*) FROM booking_photos bp WHERE bp.booking_id = bookings.id) AS photo_n";
+
+/** Wunschbilder prüfen: max. 3, nur JPEG/WebP, Größe begrenzt, Dateikopf passt zum Typ */
+export const MAX_BPHOTOS = 3;
+export const MAX_BPHOTO_CHARS = 380_000; // Base64-Zeichen je Bild (~280 KB)
+export function cleanBookingPhotos(input) {
+  const list = Array.isArray(input) ? input : [];
+  if (list.length > MAX_BPHOTOS) fail(`Bitte höchstens ${MAX_BPHOTOS} Bilder anhängen.`);
+  return list.map(p => {
+    const t = p && p.t, d = p && p.d;
+    if ((t !== "image/jpeg" && t !== "image/webp") || typeof d !== "string" || d.length < 200) fail("Ein Bild konnte nicht verarbeitet werden.");
+    if (d.length > MAX_BPHOTO_CHARS) fail("Ein Bild ist zu groß. Bitte ein kleineres Bild wählen.", 413);
+    if (!/^[A-Za-z0-9+/]+={0,2}$/.test(d)) fail("Ein Bild konnte nicht verarbeitet werden.");
+    let head;
+    try { head = atob(d.slice(0, 16)); } catch (_) { fail("Ein Bild konnte nicht verarbeitet werden."); }
+    const jpeg = head.charCodeAt(0) === 0xFF && head.charCodeAt(1) === 0xD8;
+    const webp = head.slice(0, 4) === "RIFF" && head.slice(8, 12) === "WEBP";
+    if ((t === "image/jpeg" && !jpeg) || (t === "image/webp" && !webp)) fail("Ein Bild konnte nicht verarbeitet werden.");
+    return { mime: t, b64: d };
+  });
+}
+
 /**
  * Termin nur speichern, wenn zu jedem Zeitpunkt noch ein Platz frei ist – in EINER SQL-Anweisung,
  * damit gleichzeitige Buchungen sich nicht überholen können (D1 führt Schreibzugriffe nacheinander aus).
@@ -439,5 +467,5 @@ export async function insertIfFree(DB, b, cap) {
 }
 
 export function bookingOut(r) {
-  return { ...r, id: Number(r.id), duration: Number(r.duration), staff_id: r.staff_id == null ? null : Number(r.staff_id), services: JSON.parse(r.services || "[]"), extras: JSON.parse(r.extras || "[]") };
+  return { ...r, id: Number(r.id), photo_n: Number(r.photo_n || 0), duration: Number(r.duration), staff_id: r.staff_id == null ? null : Number(r.staff_id), services: JSON.parse(r.services || "[]"), extras: JSON.parse(r.extras || "[]") };
 }

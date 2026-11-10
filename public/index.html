@@ -25,7 +25,7 @@
   <link rel="preload" href="assets/fonts/bodoni-moda-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/jost-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="assets/css/fonts.css?v=20261105">
-  <link rel="stylesheet" href="assets/css/style.css?v=20261123">
+  <link rel="stylesheet" href="assets/css/style.css?v=20261124">
   <script>var d=document.documentElement;d.classList.add("js");try{sessionStorage.getItem("vn-intro")?d.classList.add("seen"):sessionStorage.setItem("vn-intro","1")}catch(e){}</script>
 
   <script type="application/ld+json">
@@ -241,31 +241,6 @@
       </div>
     </div>
     <div class="hover-img" data-hover-img aria-hidden="true"><img alt=""></div>
-  </section>
-
-  <!-- ============ LOOK-DESIGNER ============ -->
-  <section class="sec look" id="look" data-theme="light">
-    <div class="wrap look-grid">
-      <div class="look-head">
-        <p class="label reveal">— Ausprobieren</p>
-        <h2 class="reveal">Ihr <em>Look.</em></h2>
-        <p class="look-lead reveal">Form, Farbe, Finish – stellen Sie Ihr Wunsch-Set zusammen und bringen Sie es direkt zum Termin mit.</p>
-      </div>
-      <div class="look-stage reveal">
-        <svg data-look-svg viewBox="0 0 520 400" role="img" aria-label="Vorschau Ihres Looks"></svg>
-        <p class="look-sum" data-look-sum aria-live="polite"></p>
-        <p class="look-note">Vorschau zur Inspiration – Farben und Formen können in echt leicht abweichen.</p>
-      </div>
-      <div class="look-panel reveal">
-        <div class="look-row"><span class="look-k">Form</span><div class="look-chips" data-look-shape role="radiogroup" aria-label="Nagelform"></div></div>
-        <div class="look-row"><span class="look-k">Farbe</span><div class="look-swatches" data-look-color role="radiogroup" aria-label="Farbe"></div></div>
-        <div class="look-row"><span class="look-k">Finish</span><div class="look-chips" data-look-finish role="radiogroup" aria-label="Finish"></div></div>
-        <div class="look-actions">
-          <button class="btn-solid" data-book data-preselect="neu" data-look-book>Mit diesem Look buchen <i class="arr" aria-hidden="true"></i></button>
-          <button class="btn-line btn-line-dark" type="button" data-look-random>Überraschen Sie mich</button>
-        </div>
-      </div>
-    </div>
   </section>
 
   <!-- ============ GALERIE ============ -->
@@ -494,6 +469,18 @@
             <textarea id="f-note" name="note" rows="3" placeholder=" "></textarea>
             <label for="f-note">Wunsch, Form oder Inspiration <span>(optional)</span></label>
           </div>
+          <div class="bk-pics" data-bk-pics>
+            <p class="bk-pics-t">Wunschbild <span>(optional)</span></p>
+            <p class="bk-pics-h">Haben Sie ein Foto, wie Ihre Nägel aussehen sollen? Gern auch aus dem Internet oder von Instagram. So können wir uns schon vorbereiten.</p>
+            <div class="bk-pics-row" data-pics-row>
+              <label class="bk-pic-add" data-pics-add>
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/*" multiple class="vh-input" data-pics-file>
+                <span class="bk-pic-plus" aria-hidden="true"></span><span>Foto hinzufügen</span>
+              </label>
+            </div>
+            <p class="bk-pics-n" data-pics-msg role="status" aria-live="polite"></p>
+            <p class="bk-pics-p">Das Foto wird nur zur Vorbereitung Ihres Termins gespeichert und zusammen mit dem Termin gelöscht.</p>
+          </div>
           <fieldset class="bk-radio">
             <legend>Waren Sie schon bei uns?</legend>
             <label><input type="radio" name="visit" value="Neukundin/Neukunde" checked><span>Erster Besuch</span></label>
@@ -549,6 +536,6 @@
   </div>
 </div>
 
-<script src="assets/js/main.js?v=20261123" defer></script>
+<script src="assets/js/main.js?v=20261124" defer></script>
 </body>
 </html>

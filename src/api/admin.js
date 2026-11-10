@@ -5,7 +5,7 @@ import {
   handle, json, fail, readJson, db, getSetting, setSetting, rateLimit, hashPassword, verifyPassword, sha256, randomHex,
   clean, validDate, validTime, resolve, busy, fits, toMin, closedDates, bookingOut, newRef, berlinNow, addDays,
   customerKey, priceValue, ensureCustomer, normPhone, getCatalog, validateCatalog, publicCatalog,
-  galleryList, toB64, PHOTO_CATS, staffList, capacityOf, staffFree,
+  galleryList, toB64, PHOTO_CATS, staffList, capacityOf, staffFree, PHOTO_N, fromB64,
   STATUSES, SOURCES, salon
 } from "../lib.js";
 
@@ -73,7 +73,7 @@ export const onRequestPost = handle(async ({ request, env }) => {
     case "bookings": {
       const from = String(input.from || today), to = String(input.to || from);
       if (!validDate(from) || !validDate(to)) fail("Ungültiger Zeitraum.");
-      const { results } = await DB.prepare("SELECT * FROM bookings WHERE date BETWEEN ? AND ? ORDER BY date, time").bind(from, to).all();
+      const { results } = await DB.prepare(`SELECT *, ${PHOTO_N} FROM bookings WHERE date BETWEEN ? AND ? ORDER BY date, time`).bind(from, to).all();
       return json({ ok: true, bookings: results.map(bookingOut) });
     }
 
@@ -81,7 +81,7 @@ export const onRequestPost = handle(async ({ request, env }) => {
       const q = `%${clean(input.q, 60).replace(/[\\%_]/g, c => "\\" + c)}%`;
       const status = String(input.status || "");
       const upcoming = !!input.upcoming;
-      let sql = "SELECT * FROM bookings WHERE (name LIKE ?1 ESCAPE '\\' OR phone LIKE ?1 ESCAPE '\\' OR ref LIKE ?1 ESCAPE '\\' OR title LIKE ?1 ESCAPE '\\')";
+      let sql = `SELECT *, ${PHOTO_N} FROM bookings WHERE (name LIKE ?1 ESCAPE '\\' OR phone LIKE ?1 ESCAPE '\\' OR ref LIKE ?1 ESCAPE '\\' OR title LIKE ?1 ESCAPE '\\')`;
       const params = [q];
       if (STATUSES.includes(status)) { sql += ` AND status = ?${params.length + 1}`; params.push(status); }
       if (upcoming) { sql += ` AND date >= ?${params.length + 1}`; params.push(today); }
@@ -156,8 +156,15 @@ export const onRequestPost = handle(async ({ request, env }) => {
       return json({ ok: true });
     }
 
+    case "booking_photos": {
+      const { results } = await DB.prepare("SELECT id FROM booking_photos WHERE booking_id = ? ORDER BY id").bind(Number(input.id || 0)).all();
+      return json({ ok: true, ids: results.map(r => Number(r.id)) });
+    }
     case "delete": {
-      await DB.prepare("DELETE FROM bookings WHERE id = ?").bind(Number(input.id || 0)).run();
+      await DB.batch([
+        DB.prepare("DELETE FROM booking_photos WHERE booking_id = ?").bind(Number(input.id || 0)),
+        DB.prepare("DELETE FROM bookings WHERE id = ?").bind(Number(input.id || 0))
+      ]);
       return json({ ok: true });
     }
 
@@ -184,7 +191,7 @@ export const onRequestPost = handle(async ({ request, env }) => {
     }
 
     case "recent": {
-      const { results } = await DB.prepare("SELECT * FROM bookings WHERE source = 'online' AND date >= ? AND status != 'cancelled' ORDER BY created_at DESC LIMIT 8").bind(today).all();
+      const { results } = await DB.prepare(`SELECT *, ${PHOTO_N} FROM bookings WHERE source = 'online' AND date >= ? AND status != 'cancelled' ORDER BY created_at DESC LIMIT 8`).bind(today).all();
       return json({ ok: true, bookings: results.map(bookingOut) });
     }
 
@@ -251,7 +258,7 @@ export const onRequestPost = handle(async ({ request, env }) => {
         c = await DB.prepare("SELECT * FROM customers WHERE id = ?").bind(Number(input.id || 0)).first();
       }
       if (!c) fail("Kundin nicht gefunden.", 404);
-      const { results } = await DB.prepare("SELECT * FROM bookings WHERE customer_key = ? ORDER BY date DESC, time DESC").bind(c.ckey).all();
+      const { results } = await DB.prepare(`SELECT *, ${PHOTO_N} FROM bookings WHERE customer_key = ? ORDER BY date DESC, time DESC`).bind(c.ckey).all();
       return json({ ok: true, customer: { id: c.id, note: c.note, created_at: c.created_at }, bookings: results.map(bookingOut) });
     }
 
@@ -401,3 +408,20 @@ export const onPhotoUpload = handle(async ({ request, env }) => {
   const row = await DB.prepare("SELECT MAX(id) AS id FROM photos").first();
   return json({ ok: true, id: row?.id });
 });
+
+
+/** GET /api/booking-photo/:id → Wunschbild einer Kundin (nur für angemeldete Mitarbeiter, nie zwischenspeichern) */
+export async function onBookingPhotoGet({ request, env }) {
+  const H = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
+  try {
+    const m = new URL(request.url).pathname.match(/^\/api\/booking-photo\/(\d+)$/);
+    const DB = await db(env);
+    if (!m || !(await isAuthed(DB, request))) return new Response("Nicht gefunden", { status: 404, headers: H });
+    const r = await DB.prepare("SELECT mime, b64 FROM booking_photos WHERE id = ?").bind(Number(m[1])).first();
+    if (!r) return new Response("Nicht gefunden", { status: 404, headers: H });
+    return new Response(fromB64(r.b64), { headers: { ...H, "Content-Type": r.mime } });
+  } catch (e) {
+    console.error("booking photo", e);
+    return new Response("Fehler", { status: 500, headers: H });
+  }
+}

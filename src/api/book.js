@@ -1,11 +1,12 @@
 /** POST /api/book → neue Online-Buchung (sofort fest gebucht) */
-import { handle, json, fail, readJson, db, rateLimit, clean, validDate, validTime, resolve, getCatalog, busy, closedDates, freeSlots, insertIfFree, newRef, staffList, capacityOf } from "../lib.js";
+import { handle, json, fail, readJson, db, rateLimit, clean, cleanBookingPhotos, validDate, validTime, resolve, getCatalog, busy, closedDates, freeSlots, insertIfFree, newRef, staffList, capacityOf } from "../lib.js";
 
 export const onRequestPost = handle(async ({ request, env }) => {
-  const input = await readJson(request);
+  const input = await readJson(request, 1_300_000); // Platz für bis zu 3 verkleinerte Wunschbilder
   if (input.website) return json({ ok: true, ref: "VN-00000" }); // Honeypot gegen Spam-Bots
   const DB = await db(env);
   await rateLimit(DB, request, "book", 10, 3600);
+  const photos = cleanBookingPhotos(input.photos);
 
   const name = clean(input.name, 80), phone = clean(input.phone, 40), note = clean(input.note, 1000), visit = clean(input.visit, 40);
   const date = String(input.date || ""), time = String(input.time || "");
@@ -34,7 +35,15 @@ export const onRequestPost = handle(async ({ request, env }) => {
     booking.ref = newRef();
     try {
       if (!(await insertIfFree(DB, booking, cap))) taken();
-      return json({ ok: true, ref: booking.ref });
+      if (photos.length) {
+        // Bilder gehören zum Termin; schlägt das Speichern fehl, bleibt der Termin trotzdem gebucht
+        try {
+          const row = await DB.prepare("SELECT id FROM bookings WHERE ref = ?").bind(booking.ref).first();
+          const now = new Date().toISOString();
+          await DB.batch(photos.map(p => DB.prepare("INSERT INTO booking_photos(booking_id, mime, b64, created_at) VALUES(?,?,?,?)").bind(row.id, p.mime, p.b64, now)));
+        } catch (e) { console.error("booking photos", e); return json({ ok: true, ref: booking.ref, photos: 0 }); }
+      }
+      return json({ ok: true, ref: booking.ref, photos: photos.length });
     } catch (e) {
       if (!String(e && e.message).includes("UNIQUE")) throw e; // Nummer schon vergeben → neue ziehen
     }

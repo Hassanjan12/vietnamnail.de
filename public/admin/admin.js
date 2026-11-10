@@ -43,7 +43,7 @@
     }
     return "…";
   };
-  const withStaff = b => esc(b.title) + (b.staff_id ? ` · bei ${esc(staffName(b))}` : "");
+  const withStaff = b => esc(b.title) + (b.staff_id ? ` · bei ${esc(staffName(b))}` : "") + (b.photo_n ? ` · <span class="pic-flag" title="Wunschbild angehängt">${b.photo_n === 1 ? "1 Foto" : b.photo_n + " Fotos"}</span>` : "");
   const items = {}, extras = {};
 
   /* ---------------- API ---------------- */
@@ -1091,7 +1091,7 @@
             <button class="brow" data-open="${b.id}">
               <span class="brow-time">${nice(b.time)}<small>${dur(b.duration)}</small></span>
               <span class="brow-name">${esc(b.name)}<small>${esc(b.phone || "ohne Telefon")}${b.staff_id ? ` · <b class="brow-staff">bei ${esc(staffName(b))}</b>` : ""}</small></span>
-              <span class="brow-svc">${esc(b.title)}</span>
+              <span class="brow-svc">${esc(b.title)}${b.photo_n ? ` <span class="pic-flag" title="Wunschbild angehängt">${b.photo_n === 1 ? "1 Foto" : b.photo_n + " Fotos"}</span>` : ""}</span>
               <span class="pill pill-${b.status}">${STATUS[b.status]}</span>
               <span class="brow-src">${SOURCE[b.source] || ""}</span>
             </button>`).join("")}</div></div>`;
@@ -1133,13 +1133,24 @@
       b.note ? ["Notiz", esc(b.note).replace(/\n/g, "<br>")] : null,
       ["Eingegangen", new Date(b.created_at).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })]
     ].filter(Boolean);
+    if (b.photo_n) rows.splice(1, 0, ["Wunschbild", `<div class="dr-pics" data-dr-pics><span class="muted">wird geladen …</span></div>`]);
     $("[data-dr-kv]").innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
+    if (b.photo_n) loadWishPics(b);
     const active = b.status === "confirmed" || b.status === "pending";
     $$("[data-set]", drawer).forEach(x => { x.hidden = x.dataset.set === b.status || (x.dataset.set === "confirmed" && active); });
     scrim.hidden = false; drawer.hidden = false;
     document.body.classList.add("is-locked");
     requestAnimationFrame(() => { scrim.classList.add("is-on"); drawer.classList.add("is-on"); });
     $("[data-close]", drawer).focus();
+  }
+  // Wunschbilder der Kundin laden (nur Nummern; die Bilder selbst kommen über die geschützte Adresse)
+  async function loadWishPics(b) {
+    const box = $("[data-dr-pics]");
+    try {
+      const r = await api("booking_photos", { id: b.id });
+      if (current !== b || !box) return;
+      box.innerHTML = r.ids.map((id, i) => `<a href="/api/booking-photo/${id}" target="_blank" rel="noopener" class="dr-pic" aria-label="Wunschbild ${i + 1} groß ansehen"><img src="/api/booking-photo/${id}" alt="Wunschbild ${i + 1}" loading="lazy"></a>`).join("") || "–";
+    } catch (e) { if (box) box.textContent = "Bilder konnten nicht geladen werden."; }
   }
   function closeDrawer() {
     scrim.classList.remove("is-on"); drawer.classList.remove("is-on");

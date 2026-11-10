@@ -613,3 +613,11 @@ select.lp-in { padding-right: 24px; background-image: linear-gradient(45deg, tra
   *, *::before, *::after { transition-duration: .01ms !important; }
 }
 .brow-staff { font-weight: 500; color: var(--ink); }
+
+/* Wunschbilder der Kundinnen */
+.pic-flag { display: inline-block; font-size: .72rem; letter-spacing: .04em; padding: 1px 7px; border: 1px solid var(--green-600, #2e6a4b); color: var(--green-600, #2e6a4b); border-radius: 20px; vertical-align: 1px; }
+.dr-pics { display: flex; flex-wrap: wrap; gap: 8px; }
+.dr-pic { display: block; width: 92px; height: 92px; border: 1px solid var(--line); overflow: hidden; background: var(--white); }
+.dr-pic img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s; }
+.dr-pic:hover img { transform: scale(1.06); }
+.brow-svc .pic-flag { margin-left: 6px; }
