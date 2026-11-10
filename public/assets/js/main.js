@@ -147,6 +147,115 @@
   }
   $$(".reveal, .reveal-img").forEach(el => observeReveal(el));
 
+  /* ---------------- Efeu-Ranke: wächst beim Scrollen ---------------- */
+  let vineFx = null;
+  const vine = $("[data-vine]");
+  if (vine) {
+    const stem = $(".vine-stem", vine), len = stem.getTotalLength(), leaves = [];
+    for (let i = 0; i < 11; i++) {
+      const t = (i + 1) / 12, p = stem.getPointAtLength(t * len), q = stem.getPointAtLength(Math.min(len, t * len + 2));
+      const ang = Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI + (i % 2 ? 56 : -56);
+      const sc = (.72 + ((i * 37) % 10) / 24) * (1 - t * .22);
+      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      g.setAttribute("transform", `translate(${p.x.toFixed(1)} ${p.y.toFixed(1)}) rotate(${ang.toFixed(1)}) scale(${sc.toFixed(2)})`);
+      g.innerHTML = `<g class="vine-leaf"><path d="M0,0 C 10,-13 30,-15 44,0 C 30,15 10,13 0,0 Z"/><path class="vine-rib" d="M3,0 L39,0"/></g>`;
+      vine.appendChild(g);
+      leaves.push([t, g.firstElementChild]);
+    }
+    if (reduced) leaves.forEach(([, el]) => el.classList.add("on"));
+    else {
+      stem.style.strokeDasharray = len;
+      vineFx = () => {
+        const r = vine.getBoundingClientRect();
+        if (r.bottom < -100 || r.top > window.innerHeight + 100) return;
+        const p = Math.max(0, Math.min(1, (window.innerHeight * .92 - r.top) / (r.height + window.innerHeight * .3)));
+        stem.style.strokeDashoffset = (len * (1 - p)).toFixed(1);
+        leaves.forEach(([t, el]) => el.classList.toggle("on", p > t + .03));
+      };
+    }
+  }
+
+  /* ---------------- Look-Designer: Form, Farbe, Finish ausprobieren ---------------- */
+  const lookSvg = $("[data-look-svg]");
+  if (lookSvg) {
+    const BASE = "M -21,-4 Q -21,7 0,9 Q 21,7 21,-4 ";
+    const SHAPES = {
+      rund: ["Rund", "L 21,-34 Q 21,-60 0,-60 Q -21,-60 -21,-34 Z", -60],
+      mandel: ["Mandel", "L 21,-40 Q 19,-84 0,-92 Q -19,-84 -21,-40 Z", -92],
+      coffin: ["Ballerina", "L 21,-48 L 11,-98 Q 10,-103 5,-103 L -5,-103 Q -10,-103 -11,-98 L -21,-48 Z", -103],
+      stiletto: ["Stiletto", "L 21,-38 L 3,-114 Q 0,-120 -3,-114 L -21,-38 Z", -120],
+      eckig: ["Eckig", "L 21,-58 Q 21,-63 16,-63 L -16,-63 Q -21,-63 -21,-58 Z", -63]
+    };
+    const COLORS = [["Nude", "#e3c4b4"], ["Rosé", "#eba7b6"], ["Rot", "#b3202e"], ["Bordeaux", "#5e1224"], ["Milchweiß", "#f6f1eb"],
+      ["Babyblau", "#a9c9e8"], ["Türkis", "#2fb7b0"], ["Salbei", "#9dbf9f"], ["Lila", "#a78bc4"], ["Schwarz", "#161616"]];
+    const FINISH = { glanz: "Glanz", chrome: "Chrome", glitzer: "Glitzer", french: "French", ombre: "Ombré" };
+    const FINGERS = [[78, 182, -9, .9], [168, 132, -4, 1], [260, 114, 0, 1.04], [352, 136, 4, 1], [442, 190, 9, .88]]; // x, Fingerkuppe, Drehung, Größe
+    const NUDE = "#f0d9cd";
+    const L = { shape: "mandel", color: 1, finish: "glanz" };
+    const els2 = { shape: $("[data-look-shape]"), color: $("[data-look-color]"), finish: $("[data-look-finish]"), sum: $("[data-look-sum]") };
+
+    const draw = () => {
+      const [, tail, tip] = SHAPES[L.shape], d = BASE + tail, col = COLORS[L.color][1];
+      const fill = L.finish === "french" ? NUDE : L.finish === "ombre" ? "url(#lk-ombre)" : col;
+      const smile = tip * .66;
+      const extra = L.finish === "french" ? `<path d="M -30,${smile} Q 0,${smile + 15} 30,${smile} L 30,${tip - 12} L -30,${tip - 12} Z" fill="${L.color === 0 ? "#ffffff" : col}"/>`
+        : L.finish === "chrome" ? `<rect x="-30" y="${tip - 6}" width="60" height="${-tip + 24}" fill="url(#lk-chrome)"/>`
+        : L.finish === "glitzer" ? `<rect x="-30" y="${tip - 6}" width="60" height="${-tip + 24}" fill="url(#lk-glit)"/>` : "";
+      lookSvg.innerHTML = `<defs>
+          <linearGradient id="lk-ombre" x1="0" y1="0" x2="0" y2="1"><stop offset=".08" stop-color="${col}"/><stop offset=".92" stop-color="${NUDE}"/></linearGradient>
+          <linearGradient id="lk-chrome" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".8"/><stop offset=".3" stop-color="#fff" stop-opacity="0"/><stop offset=".52" stop-color="#fff" stop-opacity=".6"/><stop offset=".74" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".45"/></linearGradient>
+          <pattern id="lk-glit" width="40" height="40" patternUnits="userSpaceOnUse"><circle cx="13.0" cy="6.0" r="1.15" fill="#fff" opacity="0.58"/><circle cx="21.4" cy="14.6" r="0.35" fill="#fdf3d0" opacity="0.65"/><circle cx="3.4" cy="16.7" r="0.45" fill="#fff" opacity="0.8"/><circle cx="2.4" cy="22.6" r="0.45" fill="#fdf3d0" opacity="0.98"/><circle cx="23.1" cy="15.9" r="0.45" fill="#fff" opacity="0.8"/><circle cx="5.3" cy="16.8" r="0.9" fill="#fff" opacity="0.81"/><circle cx="22.4" cy="27.3" r="0.35" fill="#fdf3d0" opacity="0.81"/><circle cx="7.5" cy="3.9" r="1.15" fill="#fff" opacity="0.8"/><circle cx="24.8" cy="19.9" r="0.9" fill="#ffe9a8" opacity="0.9"/><circle cx="18.6" cy="36.9" r="0.55" fill="#fff" opacity="0.66"/><circle cx="7.2" cy="31.2" r="0.35" fill="#fdf3d0" opacity="0.69"/><circle cx="19.8" cy="13.7" r="0.7" fill="#fff" opacity="0.82"/><circle cx="2.9" cy="20.5" r="0.45" fill="#fff" opacity="0.62"/><circle cx="19.6" cy="1.6" r="1.15" fill="#fff" opacity="0.89"/><circle cx="22.9" cy="35.0" r="0.55" fill="#fff" opacity="0.86"/><circle cx="23.8" cy="23.2" r="0.7" fill="#fff" opacity="0.93"/><circle cx="37.8" cy="19.0" r="1.15" fill="#fff" opacity="0.58"/><circle cx="28.1" cy="25.9" r="1.15" fill="#ffe9a8" opacity="0.68"/><circle cx="15.4" cy="26.7" r="0.35" fill="#ffe9a8" opacity="0.71"/><circle cx="24.4" cy="19.7" r="0.45" fill="#fff" opacity="0.61"/><circle cx="9.9" cy="15.6" r="0.7" fill="#fff" opacity="0.62"/><circle cx="16.1" cy="11.1" r="0.45" fill="#ffe9a8" opacity="0.94"/><circle cx="11.1" cy="16.6" r="0.55" fill="#ffe9a8" opacity="0.98"/><circle cx="6.0" cy="7.0" r="0.45" fill="#fff" opacity="0.56"/><circle cx="33.2" cy="7.3" r="0.55" fill="#fff" opacity="0.62"/><circle cx="21.4" cy="24.4" r="0.55" fill="#fff" opacity="0.86"/><circle cx="20.6" cy="24.7" r="1.15" fill="#fff" opacity="0.76"/><circle cx="34.8" cy="38.1" r="1.15" fill="#fdf3d0" opacity="0.73"/><circle cx="16.0" cy="4.1" r="1.15" fill="#ffe9a8" opacity="0.58"/><circle cx="2.7" cy="8.4" r="0.45" fill="#fff" opacity="0.7"/><circle cx="2.1" cy="0.0" r="0.45" fill="#fdf3d0" opacity="0.6"/><circle cx="14.5" cy="1.0" r="0.45" fill="#fdf3d0" opacity="0.72"/><circle cx="25.4" cy="38.2" r="0.9" fill="#fff" opacity="0.76"/><circle cx="4.6" cy="19.5" r="0.7" fill="#ffe9a8" opacity="0.77"/><circle cx="3.4" cy="4.1" r="0.55" fill="#fff" opacity="0.77"/><circle cx="27.7" cy="20.7" r="0.45" fill="#fdf3d0" opacity="0.71"/><circle cx="27.6" cy="36.6" r="0.9" fill="#fff" opacity="0.99"/><circle cx="34.5" cy="27.8" r="0.55" fill="#fdf3d0" opacity="0.72"/><circle cx="6.7" cy="30.9" r="0.9" fill="#fdf3d0" opacity="0.9"/><circle cx="13.2" cy="8.9" r="0.45" fill="#fff" opacity="0.92"/><circle cx="29.6" cy="9.1" r="0.9" fill="#ffe9a8" opacity="0.71"/><circle cx="1.2" cy="1.1" r="0.55" fill="#ffe9a8" opacity="0.67"/><circle cx="27.7" cy="38.3" r="0.7" fill="#fff" opacity="0.98"/><circle cx="14.6" cy="8.8" r="0.45" fill="#ffe9a8" opacity="0.64"/><circle cx="8.2" cy="25.0" r="0.9" fill="#fff" opacity="0.77"/><circle cx="26.1" cy="32.0" r="0.35" fill="#fff" opacity="0.96"/><path d="M11,5.8 L11.704,8.296 L14.2,9 L11.704,9.704 L11,12.2 L10.296,9.704 L7.8,9 L10.296,8.296 Z" fill="#fff"/><path d="M29,24.4 L29.572,26.428 L31.6,27 L29.572,27.572 L29,29.6 L28.428,27.572 L26.4,27 L28.428,26.428 Z" fill="#fff"/></pattern>
+          <clipPath id="lk-clip"><path d="${d}"/></clipPath>
+        </defs>` + FINGERS.map(([x, y, rot, sc], i) => `
+        <g transform="translate(${x} ${y + 58 * sc}) rotate(${rot}) scale(${sc})">
+          <path class="lk-finger" d="M -30,420 L -30,-24 Q -30,-58 0,-58 Q 30,-58 30,-24 L 30,420"/>
+          <path class="lk-knuckle" d="M -15,118 Q 0,111 15,118 M -12,131 Q 0,126 12,131"/>
+          <g class="lk-nail" style="--d:${i}">
+            <path d="${d}" fill="${fill}"/>
+            <g clip-path="url(#lk-clip)">${extra}</g>
+            <path class="lk-gloss" d="M -11,-10 Q -13,${(tip * .45).toFixed(0)} -8,${(tip * .7).toFixed(0)}"/>
+            <path class="lk-outline" d="${d}"/>
+          </g>
+        </g>`).join("");
+      els2.sum.textContent = `${SHAPES[L.shape][0]} · ${COLORS[L.color][0]} · ${FINISH[L.finish]}`;
+      $$("[data-v]", els2.shape).forEach(b => b.setAttribute("aria-checked", String(b.dataset.v === L.shape)));
+      $$("[data-v]", els2.color).forEach(b => b.setAttribute("aria-checked", String(Number(b.dataset.v) === L.color)));
+      $$("[data-v]", els2.finish).forEach(b => b.setAttribute("aria-checked", String(b.dataset.v === L.finish)));
+    };
+    els2.shape.innerHTML = Object.entries(SHAPES).map(([k, v]) => `<button type="button" class="lk-chip" role="radio" data-v="${k}">${v[0]}</button>`).join("");
+    els2.finish.innerHTML = Object.entries(FINISH).map(([k, v]) => `<button type="button" class="lk-chip" role="radio" data-v="${k}">${v}</button>`).join("");
+    els2.color.innerHTML = COLORS.map(([n, c], i) => `<button type="button" class="lk-sw" role="radio" data-v="${i}" style="background:${c}" aria-label="${n}" title="${n}"></button>`).join("");
+    draw();
+
+    // Solange niemand tippt, zeigt die Vorschau von selbst verschiedene Looks
+    let demo = null;
+    const rnd = () => {
+      const ks = Object.keys(SHAPES), fs = Object.keys(FINISH), prev = JSON.stringify(L);
+      do { L.shape = ks[Math.floor(Math.random() * ks.length)]; L.color = Math.floor(Math.random() * COLORS.length); L.finish = fs[Math.floor(Math.random() * fs.length)]; } while (JSON.stringify(L) === prev);
+      draw();
+    };
+    const stopDemo = () => { clearInterval(demo); demo = null; stopDemo.done = true; };
+    if (!reduced && "IntersectionObserver" in window) {
+      new IntersectionObserver(([e]) => {
+        clearInterval(demo); demo = null;
+        if (e.isIntersecting && !stopDemo.done) demo = setInterval(rnd, 2600);
+      }, { threshold: .35 }).observe(lookSvg);
+    }
+    const pick = (box, key, num) => box.addEventListener("click", e => {
+      const b = e.target.closest("[data-v]"); if (!b) return;
+      stopDemo(); L[key] = num ? Number(b.dataset.v) : b.dataset.v; draw();
+    });
+    pick(els2.shape, "shape"); pick(els2.color, "color", true); pick(els2.finish, "finish");
+    $("[data-look-random]").addEventListener("click", () => { stopDemo(); rnd(); });
+    // Wunsch in die Buchung übernehmen (Feld „Wünsche“), ohne eigene Notizen zu überschreiben
+    $("[data-look-book]").addEventListener("click", () => {
+      stopDemo();
+      const note = $('[data-bk-form] [name="note"]');
+      const txt = `Wunsch-Look: ${SHAPES[L.shape][0]}, ${COLORS[L.color][0]}, ${FINISH[L.finish]}`;
+      if (note && (!note.value.trim() || note.value.startsWith("Wunsch-Look:"))) note.value = txt;
+    });
+  }
+
   /* ---------------- Mehr Bewegung: Linien, Parallaxe, Scroll-Leiste ---------------- */
   $$(".pillars li, .gallery, .ig-grid").forEach(el => observeReveal(el));
   const scrollBar = document.createElement("div");
@@ -160,6 +269,7 @@
     fxTick = false;
     const max = document.documentElement.scrollHeight - window.innerHeight;
     scrollBar.style.transform = `scaleX(${max > 0 ? Math.min(1, window.scrollY / max) : 0})`;
+    if (vineFx) vineFx();
     pxEls.forEach(el => {
       const r = el.parentElement.getBoundingClientRect();
       if (r.bottom < -200 || r.top > window.innerHeight + 200) return;

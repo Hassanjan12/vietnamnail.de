@@ -25,8 +25,8 @@
   <link rel="preload" href="assets/fonts/bodoni-moda-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/jost-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="assets/css/fonts.css?v=20261105">
-  <link rel="stylesheet" href="assets/css/style.css?v=20261122">
-  <script>document.documentElement.classList.add("js")</script>
+  <link rel="stylesheet" href="assets/css/style.css?v=20261123">
+  <script>var d=document.documentElement;d.classList.add("js");try{sessionStorage.getItem("vn-intro")?d.classList.add("seen"):sessionStorage.setItem("vn-intro","1")}catch(e){}</script>
 
   <script type="application/ld+json">
   {
@@ -49,6 +49,7 @@
   </script>
 </head>
 <body>
+<div class="curtain" aria-hidden="true"><p><span>Vietnam</span> <span>Nails</span></p><i></i></div>
 
 <a class="skip" href="#main">Zum Inhalt springen</a>
 
@@ -121,6 +122,7 @@
   <section class="intro" data-theme="light">
     <div class="wrap intro-grid">
       <p class="label reveal">— Willkommen</p>
+      <svg class="vine" data-vine viewBox="0 0 160 620" aria-hidden="true"><path class="vine-stem" d="M 80,0 C 30,90 130,150 82,250 C 40,340 128,400 86,500 C 66,550 84,590 80,620"/></svg>
       <p class="intro-text reveal">Bei Vietnam Nails entsteht jedes Set in Handarbeit. Vom zeitlosen <em>French</em> bis zur aufwendigen <em>3D-Modellage</em> nehmen wir uns die Zeit, die gute Arbeit braucht.</p>
       <ul class="pillars">
         <li class="reveal"><span>I</span><h3>Handarbeit</h3><p>Jede Form, jede Länge, jedes Design wird von Hand modelliert und gemalt.</p></li>
@@ -239,6 +241,31 @@
       </div>
     </div>
     <div class="hover-img" data-hover-img aria-hidden="true"><img alt=""></div>
+  </section>
+
+  <!-- ============ LOOK-DESIGNER ============ -->
+  <section class="sec look" id="look" data-theme="light">
+    <div class="wrap look-grid">
+      <div class="look-head">
+        <p class="label reveal">— Ausprobieren</p>
+        <h2 class="reveal">Ihr <em>Look.</em></h2>
+        <p class="look-lead reveal">Form, Farbe, Finish – stellen Sie Ihr Wunsch-Set zusammen und bringen Sie es direkt zum Termin mit.</p>
+      </div>
+      <div class="look-stage reveal">
+        <svg data-look-svg viewBox="0 0 520 400" role="img" aria-label="Vorschau Ihres Looks"></svg>
+        <p class="look-sum" data-look-sum aria-live="polite"></p>
+        <p class="look-note">Vorschau zur Inspiration – Farben und Formen können in echt leicht abweichen.</p>
+      </div>
+      <div class="look-panel reveal">
+        <div class="look-row"><span class="look-k">Form</span><div class="look-chips" data-look-shape role="radiogroup" aria-label="Nagelform"></div></div>
+        <div class="look-row"><span class="look-k">Farbe</span><div class="look-swatches" data-look-color role="radiogroup" aria-label="Farbe"></div></div>
+        <div class="look-row"><span class="look-k">Finish</span><div class="look-chips" data-look-finish role="radiogroup" aria-label="Finish"></div></div>
+        <div class="look-actions">
+          <button class="btn-solid" data-book data-preselect="neu" data-look-book>Mit diesem Look buchen <i class="arr" aria-hidden="true"></i></button>
+          <button class="btn-line btn-line-dark" type="button" data-look-random>Überraschen Sie mich</button>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- ============ GALERIE ============ -->
@@ -522,6 +549,6 @@
   </div>
 </div>
 
-<script src="assets/js/main.js?v=20261122" defer></script>
+<script src="assets/js/main.js?v=20261123" defer></script>
 </body>
 </html>
