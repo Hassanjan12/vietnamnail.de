@@ -118,8 +118,24 @@ const SCHEMA = [
   // Wunschbilder der Kundinnen (nur für den Termin; werden 1 Woche danach gelöscht)
   `CREATE TABLE IF NOT EXISTS booking_photos (id INTEGER PRIMARY KEY AUTOINCREMENT, booking_id INTEGER NOT NULL, mime TEXT NOT NULL,
     b64 TEXT NOT NULL, created_at TEXT NOT NULL)`,
-  `CREATE INDEX IF NOT EXISTS idx_bphotos ON booking_photos(booking_id)`
+  `CREATE INDEX IF NOT EXISTS idx_bphotos ON booking_photos(booking_id)`,
+  // Austauschbare Fotos der Startseite (nicht die Galerie): ersetzen die Standard-Dateien in public/assets/img/site
+  `CREATE TABLE IF NOT EXISTS site_images (slot TEXT NOT NULL, size TEXT NOT NULL, mime TEXT NOT NULL, b64 TEXT NOT NULL,
+    v INTEGER NOT NULL, PRIMARY KEY (slot, size))`
 ];
+
+/* ---------- Austauschbare Seitenbilder ---------- */
+// Bereich → benötigte Größen (lg = groß, sm = klein für Handy)
+export const SITE_SLOTS = { "hero-side": ["lg"], "studio-main": ["lg", "sm"], "studio-detail": ["lg"], "cta-bg": ["lg"], "map-photo": ["lg", "sm"], "og": ["lg"] };
+// Dateiname auf der Website → [Bereich, Größe]
+export const SITE_FILES = {
+  "hero-side.webp": ["hero-side", "lg"],
+  "studio-innen.webp": ["studio-main", "lg"], "studio-innen-sm.webp": ["studio-main", "sm"],
+  "studio-detail.webp": ["studio-detail", "lg"],
+  "pflanzenwand.webp": ["cta-bg", "lg"],
+  "studio-aussen.webp": ["map-photo", "lg"], "studio-aussen-sm.webp": ["map-photo", "sm"],
+  "og-image.jpg": ["og", "lg"]
+};
 
 /* ---------- Galerie ---------- */
 

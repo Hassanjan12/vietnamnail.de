@@ -25,7 +25,10 @@ npx wrangler@4.149.0 dev
 (liest `wrangler.toml`, legt eine lokale Test-Datenbank in `.wrangler/` an)
 
 ## Pflegen
-- Leistungen & Preise: im Admin unter *Leistungen* · Fotos: im Admin unter *Galerie*
+- Leistungen & Preise: im Admin unter *Leistungen* · Galerie-Fotos: im Admin unter *Galerie*
+- Übrige Fotos der Startseite (Bereich „Zeit für sich“, „Ihr Termin“, „Besuchen Sie uns“, kleines Foto oben, Vorschaubild für WhatsApp/Google): im Admin unter *Seitenbilder*.
+  Die Standard-Fotos liegen in `public/assets/img/site/`; ein hochgeladenes Foto ersetzt sie (Datenbank), „Standard wiederherstellen“ bringt sie zurück.
+  Das Hintergrund-Video oben (`public/assets/video/studio.mp4`) lässt sich nur im Code ändern.
 - Team (Wunsch-Mitarbeiter bei der Buchung): im Admin unter *Einstellungen → Team*.
   Gleichzeitig buchbar sind so viele Termine, wie Personen sichtbar sind; ohne Team gilt `capacity` aus `salon.json`.
 - Öffnungszeiten, letzter Termin, Startwerte der Leistungen, Plätze (`capacity`): `public/assets/salon.json`

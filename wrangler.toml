@@ -4,12 +4,12 @@ name = "vietnamnail-de2"
 main = "src/worker.js"
 compatibility_date = "2026-09-01"
 
-# Website aus „public/“; nur /api/* geht durch den Worker
+# Website aus „public/“; durch den Worker gehen nur /api/* und die austauschbaren Seitenbilder
 [assets]
 directory = "./public"
 binding = "ASSETS"
 not_found_handling = "404-page"
-run_worker_first = ["/api/*"]
+run_worker_first = ["/api/*", "/assets/img/site/*"]
 
 # D1-Datenbank für Termine, Statistik und Admin-Zugang.
 # Datenbank mit Jurisdiction EU (Daten bleiben in der EU).

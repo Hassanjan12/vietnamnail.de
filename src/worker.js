@@ -8,6 +8,7 @@ import * as track from "./api/track.js";
 import * as admin from "./api/admin.js";
 import * as catalog from "./api/catalog.js";
 import * as gallery from "./api/gallery.js";
+import * as siteimg from "./api/siteimg.js";
 
 const ROUTES = {
   "/api/slots": { GET: slots.onRequestGet },
@@ -17,7 +18,8 @@ const ROUTES = {
   "/api/catalog": { GET: catalog.onRequestGet },
   "/api/gallery": { GET: gallery.onGalleryGet },
   "/api/admin/photo": { POST: admin.onPhotoUpload },
-  "/api/admin/staff-photo": { POST: admin.onStaffPhotoUpload }
+  "/api/admin/staff-photo": { POST: admin.onStaffPhotoUpload },
+  "/api/admin/site-image": { POST: admin.onSiteImageUpload }
 };
 
 /**
@@ -49,6 +51,10 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (VIDEOS[url.pathname]) return serveVideo(request, env, url);
+    if (url.pathname.startsWith("/assets/img/site/")) {
+      if (request.method !== "GET" && request.method !== "HEAD") return new Response(null, { status: 405, headers: { Allow: "GET, HEAD" } });
+      return siteimg.onSiteImage({ request, env, ctx });
+    }
     if (url.pathname.startsWith("/api/booking-photo/")) {
       if (request.method !== "GET" && request.method !== "HEAD") return new Response(null, { status: 405, headers: { Allow: "GET" } });
       return admin.onBookingPhotoGet({ request, env });

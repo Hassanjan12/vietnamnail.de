@@ -122,7 +122,7 @@
   $("[data-logout]").addEventListener("click", async () => { try { await api("logout"); } catch (_) {} showAuth(false); });
 
   /* ---------------- Navigation ---------------- */
-  const VIEWS = ["uebersicht", "kalender", "termine", "kunden", "leistungen", "galerie", "einstellungen", "mehr"];
+  const VIEWS = ["uebersicht", "kalender", "termine", "kunden", "leistungen", "galerie", "bilder", "einstellungen", "mehr"];
   let view = null, sub = null;
 
   function route() {
@@ -138,6 +138,7 @@
     if (v === "kunden") sub ? loadCustomer(Number(sub)) : loadCustomers();
     if (v === "leistungen") loadCatalog();
     if (v === "galerie") loadGallery();
+    if (v === "bilder") loadSiteImages();
     window.scrollTo(0, 0);
   }
   window.addEventListener("hashchange", () => { if (!appEl.hidden) route(); });
@@ -585,6 +586,146 @@
   ["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("is-over"); }));
   ["dragleave", "drop"].forEach(t => drop.addEventListener(t, () => drop.classList.remove("is-over")));
   drop.addEventListener("drop", e => { e.preventDefault(); uploadFiles(e.dataTransfer.files); });
+
+  /* ---------------- Seitenbilder (Fotos der Startseite außerhalb der Galerie) ---------------- */
+  // Bereich → Beschreibung, Bildformat und Dateien auf der Website. „Zuschnitt“: Bild wird in der Mitte auf dieses Format geschnitten.
+  const SITE = [
+    { slot: "hero-side", n: 1, title: "Startseite ganz oben: kleines Foto", where: "Ganz oben auf der Startseite, neben der großen Überschrift «Die Kunst schöner Hände». Das kleine Foto mit weißem Rahmen.",
+      note: "Nur auf dem Computer sichtbar, nicht auf dem Handy. Das große Hintergrund-Video ändert der Entwickler.", anchor: "top", ratio: [3, 4], thumb: "hero-side.webp",
+      out: [{ k: "lg", w: 700, ratio: [3, 4] }] },
+    { slot: "studio-main", n: 2, title: "«Zeit für sich»: großes Foto", where: "Bereich «Zeit für sich» (Ihr Besuch): das große Foto links neben den vier Schritten Beratung, Vorbereitung, Modellage und Finish.",
+      note: "Querformat passt am besten.", anchor: "studio", ratio: [6, 5], thumb: "studio-innen-sm.webp",
+      out: [{ k: "lg", w: 1400, ratio: [6, 5] }, { k: "sm", w: 700, ratio: [6, 5] }] },
+    { slot: "studio-detail", n: 3, title: "«Zeit für sich»: kleines Foto", where: "Bereich «Zeit für sich»: das kleine Foto, das unten rechts auf dem großen Foto liegt.",
+      note: "Hochformat passt am besten.", anchor: "studio", ratio: [3, 4], thumb: "studio-detail.webp",
+      out: [{ k: "lg", w: 800, ratio: [3, 4] }] },
+    { slot: "cta-bg", n: 4, title: "«Ihr Termin»: Hintergrund", where: "Bereich «Ihr Termin» mit dem Knopf «Jetzt Termin buchen»: das Foto im Hintergrund (aktuell: die Pflanzenwand des Studios).",
+      note: "Wird über die ganze Breite gezeigt und dunkel überlegt, damit die Schrift lesbar bleibt. Am besten ein ruhiges Motiv.", anchor: "termin", ratio: [16, 9], thumb: "pflanzenwand.webp",
+      out: [{ k: "lg", side: 1600 }] },
+    { slot: "map-photo", n: 5, title: "«Besuchen Sie uns»: Foto vom Laden", where: "Bereich «Besuchen Sie uns» (Kontakt), rechts neben Adresse und Öffnungszeiten: das Foto mit «So finden Sie uns» und dem Knopf «Karte laden».",
+      note: "Das Foto wird abgedunkelt, damit der Text darüber lesbar ist.", anchor: "kontakt", ratio: [1206, 882], thumb: "studio-aussen-sm.webp",
+      out: [{ k: "lg", w: 1400, ratio: [1206, 882] }, { k: "sm", w: 700, ratio: [1206, 882] }] },
+    { slot: "og", n: 6, title: "Vorschaubild beim Teilen des Links", where: "Nicht auf der Website selbst: Dieses Bild erscheint, wenn jemand den Link der Website verschickt (WhatsApp, Facebook, iMessage) oder in manchen Suchergebnissen.",
+      note: "Wird auf 1200 × 630 zugeschnitten. WhatsApp merkt sich das Bild oft einige Tage, ein neues Bild erscheint dort deshalb manchmal verzögert.", anchor: "top", ratio: [1200, 630], thumb: "og-image.jpg", jpg: true,
+      out: [{ k: "lg", w: 1200, ratio: [1200, 630], max: 380000 }] }
+  ];
+  // Reihenfolge auf der Seite (inkl. Bereiche ohne austauschbare Fotos), damit klar ist, wo was liegt
+  const SITE_PLAN = [
+    { name: "Ganz oben", text: "Hintergrund-Video (ändert der Entwickler)", slots: ["hero-side"] },
+    { name: "Willkommen / Unser Menü", text: "keine Fotos (beim Überfahren der Preise erscheinen Fotos aus der Galerie)", slots: [] },
+    { name: "Aus unserem Studio", text: "alle Fotos kommen aus der Galerie", gal: true, slots: [] },
+    { name: "Zeit für sich", text: "zwei Fotos", slots: ["studio-main", "studio-detail"] },
+    { name: "Instagram", text: "vier Fotos, automatisch aus der Galerie", gal: true, slots: [] },
+    { name: "Ihr Termin", text: "Hintergrundfoto", slots: ["cta-bg"] },
+    { name: "Besuchen Sie uns", text: "Foto vom Laden", slots: ["map-photo"] },
+    { name: "Beim Teilen des Links", text: "Vorschaubild", slots: ["og"] }
+  ];
+  const sb = { custom: {}, busy: false };
+
+  async function loadSiteImages() {
+    try { sb.custom = (await api("site_images")).custom; renderSiteImages(); }
+    catch (e) { if (e.message !== "auth") toast(e.message); }
+  }
+  function renderSiteImages() {
+    const bySlot = Object.fromEntries(SITE.map(s => [s.slot, s]));
+    $("[data-sb-plan]").innerHTML = SITE_PLAN.map(p => `
+      <li><b>${esc(p.name)}</b><span>${esc(p.text)}${p.gal ? ` · <a href="#galerie">Galerie öffnen</a>` : ""}</span>
+        <span class="sb-chips">${p.slots.map(k => `<a class="sb-chip" href="#bilder" data-sb-jump="${k}" title="${esc(bySlot[k].title)}">${bySlot[k].n}</a>`).join("")}</span></li>`).join("");
+    $("[data-sb-grid]").innerHTML = SITE.map(s => {
+      const v = sb.custom[s.slot];
+      return `<article class="sb-card" id="sb-${s.slot}" data-slot="${s.slot}">
+        <div class="sb-img" style="aspect-ratio:${s.ratio[0]} / ${s.ratio[1]}"><img src="/assets/img/site/${s.thumb}?v=${v || 0}" alt="Aktuelles Foto: ${esc(s.title)}"></div>
+        <div class="sb-body">
+          <h3><span class="sb-num">${s.n}</span>${esc(s.title)}</h3>
+          <p class="sb-where"><b>Wo?</b> ${esc(s.where)}</p>
+          <p class="sb-note">${esc(s.note)}</p>
+          <p class="sb-state${v ? " is-own" : ""}">${v ? "Eigenes Foto, hochgeladen am " + new Date(v).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" }) : "Standard-Foto"}</p>
+          <div class="sb-act">
+            <label class="btn btn-dark btn-sm sb-pick">${v ? "Foto ersetzen" : "Eigenes Foto wählen"}
+              <input type="file" accept="${s.jpg ? "image/jpeg,image/png,image/webp,image/*" : "image/jpeg,image/png,image/webp,image/*"}" class="vh-input" data-sb-file aria-label="Foto für ${esc(s.title)} wählen">
+            </label>
+            ${v ? `<button type="button" class="lp-btn" data-sb-reset>Standard wiederherstellen</button>` : ""}
+            ${s.slot === "og" ? "" : `<a class="lp-btn" href="../#${s.anchor}" target="_blank" rel="noopener">Auf der Website zeigen</a>`}
+          </div>
+          <p class="sb-msg" role="status" aria-live="polite"></p>
+        </div></article>`;
+    }).join("");
+  }
+
+  // Foto im Browser auf das richtige Format zuschneiden (Mitte) und verkleinern
+  async function cutSiteImage(file, spec, jpg) {
+    let src;
+    try { src = await createImageBitmap(file, { imageOrientation: "from-image" }); }
+    catch (_) {
+      src = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error("Dieses Bildformat wird nicht unterstützt. Bitte als JPG speichern.")); im.src = URL.createObjectURL(file); });
+    }
+    const W = src.width || src.naturalWidth, H = src.height || src.naturalHeight;
+    if (!W || !H) throw new Error("Bild konnte nicht gelesen werden.");
+    if (Math.min(W, H) < 300) throw new Error("Das Foto ist zu klein (mindestens 300 Pixel). Bitte ein größeres Foto wählen.");
+    let sx = 0, sy = 0, sw = W, sh = H;
+    if (spec.ratio) { // Mitte im Zielformat ausschneiden
+      const r = spec.ratio[0] / spec.ratio[1];
+      if (W / H > r) { sw = Math.round(H * r); sx = Math.round((W - sw) / 2); } else { sh = Math.round(W / r); sy = Math.round((H - sh) / 2); }
+    }
+    const scaleTo = spec.side ? Math.min(1, spec.side / Math.max(sw, sh)) : Math.min(1, spec.w / sw);
+    const draw = async (k, type, q) => {
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(sw * scaleTo * k)); c.height = Math.max(1, Math.round(sh * scaleTo * k));
+      const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.imageSmoothingQuality = "high";
+      g.drawImage(src, sx, sy, sw, sh, 0, 0, c.width, c.height);
+      return new Promise(r => c.toBlob(r, type, q));
+    };
+    const limit = spec.max || (spec.k === "sm" ? 420000 : 850000);
+    let type = jpg ? "image/jpeg" : "image/webp", blob = await draw(1, type, .84);
+    if (!jpg && (!blob || blob.type !== "image/webp")) { type = "image/jpeg"; blob = await draw(1, type, .86); }
+    for (const [k, q] of [[1, .74], [.85, .72], [.7, .68], [.55, .62]]) { if (blob && blob.size <= limit) break; blob = await draw(k, type, q); }
+    if (!blob || blob.size > limit) throw new Error("Das Foto lässt sich nicht klein genug speichern. Bitte ein anderes Foto wählen.");
+    return { blob, type };
+  }
+
+  async function uploadSiteImage(card, file) {
+    const s = SITE.find(x => x.slot === card.dataset.slot), msg = $(".sb-msg", card);
+    if (sb.busy) { toast("Bitte kurz warten, ein anderes Foto wird gerade gespeichert."); return; }
+    sb.busy = true; card.classList.add("is-saving"); msg.className = "sb-msg"; msg.textContent = "Foto wird vorbereitet …";
+    try {
+      const fd = new FormData(); fd.append("slot", s.slot);
+      let ext = "webp";
+      for (const o of s.out) {
+        const r = await cutSiteImage(file, { ...o, k: o.k }, s.jpg);
+        ext = r.type === "image/webp" ? "webp" : "jpg";
+        fd.append(o.k, r.blob, `${o.k}.${ext}`);
+      }
+      msg.textContent = "Foto wird gespeichert …";
+      const res = await fetch("/api/admin/site-image", { method: "POST", credentials: "same-origin", headers: { "X-VN": "1" }, body: fd });
+      const j = await res.json().catch(() => ({}));
+      if (res.status === 401) { showAuth(false); return; }
+      if (!res.ok || !j.ok) throw new Error(j.error || "Speichern fehlgeschlagen.");
+      sb.custom[s.slot] = j.v; sb.busy = false; renderSiteImages(); toast("Foto gespeichert");
+      const m2 = $(`#sb-${s.slot} .sb-msg`); if (m2) { m2.className = "sb-msg is-ok"; m2.textContent = "Gespeichert. Auf der Website ist es spätestens in 5 Minuten für alle sichtbar."; }
+    } catch (x) { msg.className = "sb-msg is-err"; msg.textContent = x.message; }
+    finally { sb.busy = false; card.classList.remove("is-saving"); }
+  }
+  $("[data-sb-grid]").addEventListener("change", e => {
+    if (!e.target.matches("[data-sb-file]") || !e.target.files[0]) return;
+    const f = e.target.files[0], card = e.target.closest(".sb-card");
+    e.target.value = "";
+    if (!/^image\//.test(f.type) && !/\.(jpe?g|png|webp|heic)$/i.test(f.name)) { $(".sb-msg", card).className = "sb-msg is-err"; $(".sb-msg", card).textContent = "Das ist kein Foto."; return; }
+    uploadSiteImage(card, f);
+  });
+  $("[data-sb-grid]").addEventListener("click", async e => {
+    const b = e.target.closest("[data-sb-reset]"); if (!b) return;
+    const card = b.closest(".sb-card"), s = SITE.find(x => x.slot === card.dataset.slot);
+    if (!confirm(`Das Standard-Foto für «${s.title}» wiederherstellen?\n\nIhr eigenes Foto wird dabei gelöscht.`)) return;
+    try { await api("site_image_reset", { slot: s.slot }); delete sb.custom[s.slot]; renderSiteImages(); toast("Standard-Foto wiederhergestellt"); }
+    catch (x) { if (x.message !== "auth") toast(x.message); }
+  });
+  $("[data-sb-plan]").addEventListener("click", e => {
+    const a = e.target.closest("[data-sb-jump]"); if (!a) return;
+    e.preventDefault();
+    const card = $(`#sb-${a.dataset.sbJump}`); if (!card) return;
+    card.scrollIntoView({ behavior: "smooth", block: "center" });
+    card.classList.remove("is-flash"); void card.offsetWidth; card.classList.add("is-flash");
+  });
 
   /* ---------------- Leistungen & Preise ---------------- */
   const DURS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 210, 240, 300];

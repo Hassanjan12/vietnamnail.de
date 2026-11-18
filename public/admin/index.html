@@ -11,7 +11,7 @@
   <link rel="preload" href="../assets/fonts/bodoni-moda-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="../assets/fonts/jost-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../assets/css/fonts.css?v=20261105">
-  <link rel="stylesheet" href="admin.css?v=20261125">
+  <link rel="stylesheet" href="admin.css?v=20261129">
 </head>
 <body>
 
@@ -53,6 +53,7 @@
       <a href="#kunden" data-nav="kunden"><i class="ic ic-users"></i><span>Kunden</span></a>
       <a href="#leistungen" data-nav="leistungen"><i class="ic ic-tag"></i><span>Leistungen</span></a>
       <a href="#galerie" data-nav="galerie"><i class="ic ic-img"></i><span>Galerie</span></a>
+      <a href="#bilder" data-nav="bilder"><i class="ic ic-img"></i><span>Seitenbilder</span></a>
       <a href="#einstellungen" data-nav="einstellungen"><i class="ic ic-gear"></i><span>Einstellungen</span></a>
     </nav>
     <button class="btn btn-light side-new" data-new><span class="plus"></span>Neuer Termin</button>
@@ -310,10 +311,26 @@
         <a href="#kunden"><i class="ic ic-users"></i><span>Kunden<small>Kartei, Notizen, Besuche</small></span><i class="ic ic-chev"></i></a>
         <a href="#leistungen"><i class="ic ic-tag"></i><span>Leistungen &amp; Preise<small>Neue Leistungen, Preise ändern</small></span><i class="ic ic-chev"></i></a>
         <a href="#galerie"><i class="ic ic-img"></i><span>Galerie<small>Fotos hinzufügen und entfernen</small></span><i class="ic ic-chev"></i></a>
+        <a href="#bilder"><i class="ic ic-img"></i><span>Seitenbilder<small>Fotos der Startseite austauschen</small></span><i class="ic ic-chev"></i></a>
         <a href="#einstellungen"><i class="ic ic-gear"></i><span>Einstellungen<small>Passwort, geschlossene Tage, Export</small></span><i class="ic ic-chev"></i></a>
         <a href="../" target="_blank" rel="noopener"><i class="ic ic-home"></i><span>Website ansehen<small>öffnet in neuem Tab</small></span><i class="ic ic-chev"></i></a>
         <button type="button" data-logout-m><i class="ic ic-dots"></i><span>Abmelden</span></button>
       </nav>
+    </section>
+
+    <!-- SEITENBILDER -->
+    <section class="view" data-view="bilder" hidden>
+      <header class="vh">
+        <div><p class="eyebrow">Website</p><h1>Seitenbilder</h1></div>
+        <a class="btn btn-line btn-sm" href="../" target="_blank" rel="noopener">Website ansehen</a>
+      </header>
+      <p class="muted small lp-intro">Hier ändern Sie die Fotos der Startseite, die <b>nicht zur Galerie gehören</b>. Zu jedem Foto steht, <b>wo genau</b> es auf der Website erscheint.
+        Die Fotos der Galerie (auch die vier Bilder im Instagram-Bereich) ändern Sie unter <a href="#galerie">Galerie</a>.
+        Ein neues Foto wird automatisch verkleinert und zugeschnitten und ist spätestens nach 5 Minuten für alle sichtbar. <b>Bitte nur Fotos verwenden, mit denen alle abgebildeten Personen einverstanden sind.</b></p>
+      <h2 class="sb-h2">Seitenplan</h2>
+      <ol class="sb-plan" data-sb-plan></ol>
+      <h2 class="sb-h2">Alle Fotos</h2>
+      <div class="sb-grid" data-sb-grid></div>
     </section>
 
     <section class="view" data-view="einstellungen" hidden>
@@ -371,7 +388,7 @@
     <a href="#kalender" data-nav="kalender"><i class="ic ic-cal"></i><span>Kalender</span></a>
     <button class="tab-new" data-new aria-label="Neuer Termin"><span class="plus"></span></button>
     <a href="#termine" data-nav="termine"><i class="ic ic-list"></i><span>Termine</span></a>
-    <a href="#mehr" data-nav="mehr" data-nav-also="kunden leistungen galerie einstellungen"><i class="ic ic-dots"></i><span>Mehr</span></a>
+    <a href="#mehr" data-nav="mehr" data-nav-also="kunden leistungen galerie bilder einstellungen"><i class="ic ic-dots"></i><span>Mehr</span></a>
   </nav>
 </div>
 
@@ -471,6 +488,6 @@
 
 <div class="toast" data-toast role="status" aria-live="polite"></div>
 
-<script src="admin.js?v=20261126" defer></script>
+<script src="admin.js?v=20261128" defer></script>
 </body>
 </html>

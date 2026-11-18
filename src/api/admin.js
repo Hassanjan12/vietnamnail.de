@@ -5,9 +5,10 @@ import {
   handle, json, fail, readJson, db, getSetting, setSetting, rateLimit, hashPassword, verifyPassword, sha256, randomHex,
   clean, validDate, validTime, resolve, busy, fits, toMin, closedDates, bookingOut, newRef, berlinNow, addDays,
   customerKey, priceValue, ensureCustomer, normPhone, getCatalog, validateCatalog, publicCatalog,
-  galleryList, toB64, PHOTO_CATS, staffList, capacityOf, staffFree, PHOTO_N, fromB64,
+  galleryList, toB64, PHOTO_CATS, staffList, capacityOf, staffFree, PHOTO_N, fromB64, SITE_SLOTS,
   STATUSES, SOURCES, salon
 } from "../lib.js";
+import { forgetSiteOverrides, purgeSiteImage } from "./siteimg.js";
 
 const SESSION_DAYS = 14;
 const MIN_PW = 10;
@@ -280,6 +281,18 @@ export const onRequestPost = handle(async ({ request, env }) => {
       await DB.prepare("INSERT INTO staff(name, hidden, sort, created_at) VALUES(?, 0, (SELECT COALESCE(MAX(sort), 0) + 1 FROM staff), ?)").bind(name, new Date().toISOString()).run();
       return json({ ok: true, staff: await staffList(DB) });
     }
+    case "site_images": {
+      const { results } = await DB.prepare("SELECT slot, MAX(v) AS v FROM site_images GROUP BY slot").all();
+      return json({ ok: true, custom: Object.fromEntries(results.map(r => [r.slot, Number(r.v)])) });
+    }
+    case "site_image_reset": {
+      const slot = String(input.slot || "");
+      if (!SITE_SLOTS[slot]) fail("Unbekannter Bereich.");
+      await DB.prepare("DELETE FROM site_images WHERE slot = ?").bind(slot).run();
+      forgetSiteOverrides();
+      await purgeSiteImage(new URL(request.url).origin, slot);
+      return json({ ok: true });
+    }
     case "staff_photo_delete": {
       const id = Number(input.id || 0);
       await DB.batch([DB.prepare("DELETE FROM staff_photo WHERE id = ?").bind(id), DB.prepare("UPDATE staff SET photo_v = 0 WHERE id = ?").bind(id)]);
@@ -425,3 +438,33 @@ export async function onBookingPhotoGet({ request, env }) {
     return new Response("Fehler", { status: 500, headers: H });
   }
 }
+
+
+/** POST /api/admin/site-image (multipart: slot, lg, sm) → eigenes Foto für einen Bereich der Startseite */
+export const onSiteImageUpload = handle(async ({ request, env }) => {
+  if (request.headers.get("X-VN") !== "1") fail("Ungültige Anfrage.");
+  if (Number(request.headers.get("Content-Length") || 0) > 2_000_000) fail("Datei zu groß.", 413);
+  const DB = await db(env);
+  if (!(await isAuthed(DB, request))) fail("Bitte anmelden.", 401);
+  let form;
+  try { form = await request.formData(); } catch (_) { fail("Ungültige Datei."); }
+  const slot = String(form.get("slot") || ""), sizes = SITE_SLOTS[slot];
+  if (!sizes) fail("Unbekannter Bereich.");
+  const limit = { lg: slot === "og" ? 400_000 : 900_000, sm: 450_000 };
+  const rows = [];
+  for (const sz of sizes) {
+    const f = form.get(sz);
+    if (!f || typeof f === "string") fail("Bild fehlt.");
+    if (slot === "og" ? f.type !== "image/jpeg" : !TYPES.includes(f.type)) fail(slot === "og" ? "Das Vorschaubild muss ein JPG sein." : "Nur JPG oder WebP.");
+    if (f.size > limit[sz]) fail("Bild ist zu groß.", 413);
+    const bytes = new Uint8Array(await f.arrayBuffer());
+    if (!isImage(bytes)) fail("Die Datei ist kein gültiges Bild.");
+    rows.push({ sz, mime: f.type, b64: toB64(bytes) });
+  }
+  const v = Date.now();
+  await DB.batch(rows.map(r => DB.prepare("INSERT INTO site_images(slot, size, mime, b64, v) VALUES(?,?,?,?,?) ON CONFLICT(slot, size) DO UPDATE SET mime = excluded.mime, b64 = excluded.b64, v = excluded.v")
+    .bind(slot, r.sz, r.mime, r.b64, v)));
+  forgetSiteOverrides();
+  await purgeSiteImage(new URL(request.url).origin, slot);
+  return json({ ok: true, slot, v });
+});
